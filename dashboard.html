@@ -1187,16 +1187,17 @@
         async function initMap() {
             console.log('=== TravelGuard MVP Init ===');
             
-            // Initialize map with bounds to prevent wrapping
+            // Initialize map - allow wrapping for Russia but prevent infinite repetition
             map = L.map('map', {
-                worldCopyJump: true,  // Jump to real map when crossing dateline
-                maxBounds: [[-90, -180], [90, 180]],  // Limit to one world
-                maxBoundsViscosity: 1.0  // Hard boundaries
+                worldCopyJump: true,  // Jump to real coordinates when crossing dateline
+                minZoom: 2,  // Prevent zooming too far out
+                maxZoom: 10
             }).setView([35, 20], 3);
             
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
                 attribution: '© OpenStreetMap © CARTO',
-                noWrap: true  // Don't repeat tiles
+                noWrap: true,  // Don't repeat tiles infinitely
+                bounds: [[-85, -180], [85, 180]]  // Soft limit
             }).addTo(map);
             
             await fetchScores();
@@ -1279,6 +1280,32 @@
                             }
                         };
                         filteredFeatures.push(metropolitanFeature);
+                    }
+                    
+                // For Russia, remove eastern edge to avoid dateline wrap
+                } else if ((name === 'Russia' || name === 'Russian Federation') && feature.geometry.type === 'MultiPolygon') {
+                    const westernPolygons = [];
+                    
+                    feature.geometry.coordinates.forEach(polygon => {
+                        const lon = polygon[0][0][0];
+                        
+                        // Only keep polygons west of 170°E (removes Chukotka/far east)
+                        if (lon < 170) {
+                            westernPolygons.push(polygon);
+                        } else {
+                            console.log('Filtering eastern Russia polygon at lon:', lon);
+                        }
+                    });
+                    
+                    if (westernPolygons.length > 0) {
+                        const westernFeature = {
+                            ...feature,
+                            geometry: {
+                                type: 'MultiPolygon',
+                                coordinates: westernPolygons
+                            }
+                        };
+                        filteredFeatures.push(westernFeature);
                     }
                 } else {
                     // Keep all other countries as-is
