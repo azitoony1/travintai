@@ -1187,10 +1187,16 @@
         async function initMap() {
             console.log('=== TravelGuard MVP Init ===');
             
-            map = L.map('map').setView([35, 20], 3);
+            // Initialize map with bounds to prevent wrapping
+            map = L.map('map', {
+                worldCopyJump: true,  // Jump to real map when crossing dateline
+                maxBounds: [[-90, -180], [90, 180]],  // Limit to one world
+                maxBoundsViscosity: 1.0  // Hard boundaries
+            }).setView([35, 20], 3);
             
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '© OpenStreetMap © CARTO'
+                attribution: '© OpenStreetMap © CARTO',
+                noWrap: true  // Don't repeat tiles
             }).addTo(map);
             
             await fetchScores();
