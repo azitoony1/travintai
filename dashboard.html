@@ -1281,50 +1281,6 @@
                         };
                         filteredFeatures.push(metropolitanFeature);
                     }
-                    
-                // For Russia, remove eastern edge to avoid dateline wrap
-                } else if (name === 'Russia' || name === 'Russian Federation') {
-                    console.log('Processing Russia, geometry type:', feature.geometry.type);
-                    
-                    if (feature.geometry.type === 'Polygon') {
-                        // Single polygon - filter coordinates
-                        const filteredCoords = feature.geometry.coordinates[0].filter(coord => {
-                            return coord[0] < 170;  // Keep only west of 170°E
-                        });
-                        
-                        if (filteredCoords.length > 2) {
-                            filteredFeatures.push({
-                                ...feature,
-                                geometry: {
-                                    type: 'Polygon',
-                                    coordinates: [filteredCoords]
-                                }
-                            });
-                        }
-                    } else if (feature.geometry.type === 'MultiPolygon') {
-                        const westernPolygons = [];
-                        
-                        feature.geometry.coordinates.forEach(polygon => {
-                            const lon = polygon[0][0][0];
-                            
-                            // Only keep polygons west of 170°E
-                            if (lon < 170) {
-                                westernPolygons.push(polygon);
-                            } else {
-                                console.log('Filtering eastern Russia polygon at lon:', lon);
-                            }
-                        });
-                        
-                        if (westernPolygons.length > 0) {
-                            filteredFeatures.push({
-                                ...feature,
-                                geometry: {
-                                    type: 'MultiPolygon',
-                                    coordinates: westernPolygons
-                                }
-                            });
-                        }
-                    }
                 } else {
                     // Keep all other countries as-is
                     filteredFeatures.push(feature);
