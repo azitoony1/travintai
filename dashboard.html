@@ -468,6 +468,56 @@
             line-height: 1.6;
         }
         
+        .links-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .link-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px;
+            background: var(--surface-elevated);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            text-decoration: none;
+            color: var(--text);
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        
+        .link-item:hover {
+            border-color: var(--accent);
+            background: var(--surface);
+            transform: translateX(2px);
+        }
+        
+        .link-title {
+            flex: 1;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+        }
+        
+        .link-desc {
+            flex: 1;
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+        
+        .link-icon {
+            font-size: 16px;
+            color: var(--accent);
+            opacity: 0.7;
+        }
+        
+        .link-item:hover .link-icon {
+            opacity: 1;
+        }
+        
         /* ============================================ */
         /* MOBILE RESPONSIVENESS */
         /* ============================================ */
@@ -715,7 +765,6 @@
         <div class="detail-header">
             <div class="detail-country-name" id="detail-country-name"></div>
             <button class="back-to-map" onclick="backToMap()">← Back to Map</button>
-            <button class="close-detail" onclick="closeDetail()">×</button>
         </div>
         <div class="detail-content" id="detail-content"></div>
     </div>
@@ -886,6 +935,7 @@
                     <button class="detail-tab active" onclick="switchTab(event, 'assessment')">Situation Assessment</button>
                     <button class="detail-tab" onclick="switchTab(event, 'outlook')">Expected Developments</button>
                     <button class="detail-tab" onclick="switchTab(event, 'recommendations')">Recommendations</button>
+                    <button class="detail-tab" onclick="switchTab(event, 'links')">Useful Links</button>
                 </div>
                 
                 <div id="tab-assessment" class="detail-tab-content active">
@@ -912,6 +962,10 @@
                         </div>
                     `).join('')}
                 </div>
+                
+                <div id="tab-links" class="detail-tab-content">
+                    ${generateLinksSection(countryName, currentLayer, sources)}
+                </div>
             `;
             
             document.getElementById('detail-panel').classList.add('open');
@@ -937,6 +991,185 @@
             document.getElementById(`tab-${tabName}`).classList.add('active');
             event.target.classList.add('active');
         };
+        
+        function generateLinksSection(countryName, layer, analysisSources) {
+            const links = {
+                official: [],
+                identity: [],
+                news: [],
+                ai_sources: []
+            };
+            
+            // Official government travel advisories
+            links.official.push({
+                title: `US State Department - ${countryName} Travel Advisory`,
+                url: `https://travel.state.gov/content/travel/en/traveladvisories/traveladvisories.html`,
+                description: 'Official US government travel guidance'
+            });
+            
+            links.official.push({
+                title: `UK FCDO - ${countryName} Travel Advice`,
+                url: `https://www.gov.uk/foreign-travel-advice/${countryName.toLowerCase().replace(/ /g, '-')}`,
+                description: 'UK Foreign Office travel advice'
+            });
+            
+            // Identity-specific sources
+            if (layer === 'jewish_israeli') {
+                links.identity.push({
+                    title: 'Israeli National Security Council Travel Warnings',
+                    url: 'https://www.gov.il/en/departments/dynamiccollectors/travel-warnings-nsc',
+                    description: 'Official Israeli government warnings'
+                });
+                
+                // Country-specific Jewish/Israeli resources
+                if (countryName === 'Netherlands') {
+                    links.identity.push({
+                        title: 'CIDI (Dutch Center for Information and Documentation on Israel)',
+                        url: 'https://www.cidi.nl/',
+                        description: 'Antisemitism monitoring and Jewish community info'
+                    });
+                }
+                
+                if (countryName === 'France') {
+                    links.identity.push({
+                        title: 'CRIF (Representative Council of French Jewish Institutions)',
+                        url: 'https://www.crif.org/',
+                        description: 'French Jewish community organization'
+                    });
+                }
+                
+                if (countryName === 'United Kingdom') {
+                    links.identity.push({
+                        title: 'Community Security Trust (CST)',
+                        url: 'https://cst.org.uk/',
+                        description: 'UK Jewish community security'
+                    });
+                }
+            }
+            
+            if (layer === 'solo_women') {
+                links.identity.push({
+                    title: 'UN Women - Country Data',
+                    url: 'https://www.unwomen.org/en',
+                    description: 'Gender equality and women\'s rights data'
+                });
+                
+                links.identity.push({
+                    title: 'Georgetown Women Peace & Security Index',
+                    url: 'https://giwps.georgetown.edu/country/',
+                    description: 'Women\'s inclusion, justice, and security metrics'
+                });
+            }
+            
+            // News sources
+            links.news.push({
+                title: `BBC News - ${countryName}`,
+                url: `https://www.bbc.com/news/world`,
+                description: 'Latest news coverage'
+            });
+            
+            links.news.push({
+                title: `Reuters - ${countryName}`,
+                url: `https://www.reuters.com/world`,
+                description: 'International news wire'
+            });
+            
+            // Parse AI-generated sources from analysis
+            if (analysisSources && analysisSources.length > 0) {
+                analysisSources.forEach(source => {
+                    // Try to extract URL if present
+                    const urlMatch = source.match(/(https?:\/\/[^\s]+)/);
+                    if (urlMatch) {
+                        const url = urlMatch[1];
+                        const title = source.replace(url, '').replace(':', '').trim();
+                        links.ai_sources.push({ title: title || url, url: url });
+                    } else {
+                        // No URL, just add as text
+                        links.ai_sources.push({ title: source, url: null });
+                    }
+                });
+            }
+            
+            // Generate HTML
+            let html = '';
+            
+            if (links.official.length > 0) {
+                html += `
+                    <div class="section-title">Official Travel Advisories</div>
+                    <div class="links-group">
+                        ${links.official.map(link => `
+                            <a href="${link.url}" target="_blank" rel="noopener noreferrer" class="link-item">
+                                <div class="link-title">${link.title}</div>
+                                <div class="link-desc">${link.description}</div>
+                                <div class="link-icon">↗</div>
+                            </a>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            
+            if (links.identity.length > 0) {
+                const layerName = layer === 'jewish_israeli' ? 'Jewish & Israeli Travelers' : 
+                                 layer === 'solo_women' ? 'Solo Women Travelers' : 'Specific Resources';
+                html += `
+                    <div class="section-title" style="margin-top: 24px;">${layerName}</div>
+                    <div class="links-group">
+                        ${links.identity.map(link => `
+                            <a href="${link.url}" target="_blank" rel="noopener noreferrer" class="link-item">
+                                <div class="link-title">${link.title}</div>
+                                <div class="link-desc">${link.description}</div>
+                                <div class="link-icon">↗</div>
+                            </a>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            
+            if (links.news.length > 0) {
+                html += `
+                    <div class="section-title" style="margin-top: 24px;">News Coverage</div>
+                    <div class="links-group">
+                        ${links.news.map(link => `
+                            <a href="${link.url}" target="_blank" rel="noopener noreferrer" class="link-item">
+                                <div class="link-title">${link.title}</div>
+                                <div class="link-desc">${link.description}</div>
+                                <div class="link-icon">↗</div>
+                            </a>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            
+            if (links.ai_sources.length > 0) {
+                html += `
+                    <div class="section-title" style="margin-top: 24px;">Additional Sources</div>
+                    <div class="links-group">
+                        ${links.ai_sources.map(link => {
+                            if (link.url) {
+                                return `
+                                    <a href="${link.url}" target="_blank" rel="noopener noreferrer" class="link-item">
+                                        <div class="link-title">${link.title}</div>
+                                        <div class="link-icon">↗</div>
+                                    </a>
+                                `;
+                            } else {
+                                return `
+                                    <div class="link-item" style="opacity: 0.6; cursor: default;">
+                                        <div class="link-title">${link.title}</div>
+                                    </div>
+                                `;
+                            }
+                        }).join('')}
+                    </div>
+                `;
+            }
+            
+            if (html === '') {
+                html = '<p style="color: #8b949e; padding: 20px 0;">No links available for this country.</p>';
+            }
+            
+            return html;
+        }
         
         function closeDetail() {
             document.getElementById('detail-panel').classList.remove('open');

@@ -84,26 +84,36 @@ For each category, assign a threat level (GREEN/YELLOW/ORANGE/RED/PURPLE) based 
 IDENTITY-SPECIFIC ANALYSIS:
 You are analyzing threats specifically for SOLO WOMEN TRAVELERS.
 
-CRITICAL: Use the base layer assessment as your starting point and ONLY adjust categories where there are REAL gender-specific threats.
+CRITICAL COMPARISON RULES:
+1. START with the base layer scores as your baseline
+2. For EACH category, ask: "Does being a solo woman make this threat WORSE, BETTER, or THE SAME?"
+3. ONLY change a score if there's a CLEAR gender-specific reason
+4. If you increase a score, you MUST explain why in the reasoning
 
-Base layer assessment for reference:
+Base layer assessment (YOUR STARTING POINT):
 {format_base_analysis(base_analysis) if base_analysis else "Not available"}
 
-Consider gender-specific factors:
-- Gender-based violence and harassment
-- Sexual assault rates and legal protections
-- Cultural attitudes toward women (dress codes, behavior restrictions)
-- Women's rights and freedoms (can women travel alone legally?)
-- Safety of public transport/taxis for women
-- Availability of women-only accommodations/transport
-- Police response to crimes against women
-- Healthcare access for women
+COMMON MISTAKES TO AVOID:
+- Armed conflict affects everyone equally → Should be SAME as base unless women specifically targeted
+- Civil strife is general population risk → Should be SAME as base unless gender-based violence during unrest
+- Infrastructure problems affect everyone → Should be SAME as base
+- DO NOT inflate scores just because the traveler is a woman - only if there's ADDITIONAL gender-specific risk
 
-IMPORTANT:
-- Most categories should be IDENTICAL to base layer unless there's a clear gender-specific difference
-- Don't invent differences where none exist  
-- Regional Instability, Infrastructure, Health are usually the same UNLESS they specifically affect women differently
-- Crime and Civil Strife are most likely to differ due to gender-based threats
+Gender-specific threat factors for solo women:
+- Gender-based violence and harassment rates
+- Sexual assault statistics and legal protections for victims
+- Cultural attitudes: dress codes, behavior restrictions, women's mobility rights
+- Legal status: Can women travel alone legally? Are there guardianship laws?
+- Safety of public transport/taxis for women traveling alone
+- Police response to crimes against women (do they take reports seriously?)
+- Healthcare access for women (reproductive health, assault victims)
+
+SCORING GUIDANCE:
+- Countries with HIGH rates of gender-based violence: Increase crime by 1-2 levels vs base
+- Countries with legal restrictions on women: Note in summary but crime score depends on enforcement
+- Countries where armed conflict specifically targets women: Increase armed_conflict (rare)
+- Countries with poor legal protections: Increase crime if also high violence rates
+- Civil strife should ONLY increase if there's documented gender-based violence during protests/unrest
 """
 
     elif identity_layer == "jewish_israeli":
@@ -111,24 +121,34 @@ IMPORTANT:
 IDENTITY-SPECIFIC ANALYSIS:
 You are analyzing threats specifically for Jewish and Israeli travelers. 
 
-CRITICAL: Use the base layer assessment as your starting point and ONLY adjust categories where there are REAL identity-specific threats.
+CRITICAL COMPARISON RULES:
+1. START with the base layer scores as your baseline
+2. For EACH category, ask: "Does being Jewish/Israeli make this threat WORSE, BETTER, or THE SAME?"
+3. ONLY change a score if there's a CLEAR identity-specific reason
+4. If you increase a score, you MUST explain why in the reasoning
 
-Base layer assessment for reference:
+Base layer assessment (YOUR STARTING POINT):
 {format_base_analysis(base_analysis) if base_analysis else "Not available"}
 
-Consider identity-specific factors:
-- Antisemitic incidents and hate crimes
-- Legal barriers (countries that ban Israeli passport holders)
+COMMON MISTAKES TO AVOID:
+- Egypt base=YELLOW armed_conflict, jewish=YELLOW → WRONG if there's antisemitism or Israel tensions
+- Saudi base=YELLOW, jewish=YELLOW → WRONG - Saudi bans Israeli passports, should be RED or PURPLE
+- DO NOT make them the same unless there's truly no difference
+
+Identity-specific threat factors for Jewish/Israeli travelers:
+- Antisemitic incidents, hate crimes, targeted attacks
+- Legal barriers: countries banning Israeli passports (Iran, Saudi, Lebanon, Syria, Libya, etc.)
+- Proximity to Israel-related conflicts (Gaza, Lebanon, Iran tensions)
 - Institutional hostility toward Jews/Israelis
-- Consular protection availability (Israeli embassy presence)
-- Community infrastructure (synagogues, kosher food, Jewish organizations)
+- Israeli embassy presence and consular protection
+- Local Jewish community safety and infrastructure
 - Recent protests or violence targeting Jews/Israelis
 
-IMPORTANT: 
-- Most categories should be IDENTICAL to the base layer unless there's a clear identity-specific difference
-- Don't invent differences where none exist
-- Regional Instability, Infrastructure, Health are almost always the same as base layer
-- Only Armed Conflict, Terrorism, Civil Strife, and Crime might differ if there's targeted antisemitism
+SCORING GUIDANCE:
+- Countries that BAN Israeli passports: Minimum RED in all conflict-related categories
+- Active antisemitic violence: Increase terrorism/civil strife by 1-2 levels
+- Near active Israel conflicts: Increase armed_conflict/regional_instability
+- European countries with recent antisemitic attacks: Increase terrorism/crime vs base
 """
         
         if nsc_level:
@@ -151,7 +171,7 @@ Return your analysis as valid JSON with this exact structure:
   "infrastructure": "GREEN|YELLOW|ORANGE|RED|PURPLE",
   "reasoning": "Brief explanation of key threats driving the scores",
   "summary": "Write 2-3 SHORT paragraphs (150-200 words total). Use simple, direct sentences. Say what's actually happening - specific incidents, dates, numbers. Avoid words like 'complex', 'multifaceted', 'notably', 'furthermore'. Write like you're briefing a friend, not writing a report.",
-  "watch_factors": "List 2-3 SPECIFIC events/deadlines (e.g., 'Presidential election May 15, 2026', 'Israel-Hezbollah ceasefire ends March 2026', 'Monsoon season June-September'). Include dates when known. No vague statements.",
+  "watch_factors": "List 2-4 SPECIFIC upcoming events or ongoing situations that could change the threat level. Include dates/timeframes when known. Examples: 'Presidential election May 15, 2026', 'Israel-Hezbollah ceasefire expires March 1', 'Monsoon season June-September increases flood risk', 'Tensions with [neighbor] over [border dispute] could escalate'. For countries in conflict zones, ALWAYS mention neighboring conflicts and their potential spillover. Be concrete and actionable.",
   "recommendations": {
     "movement_access": "One sentence recommendation",
     "emergency_preparedness": "One sentence recommendation",
@@ -173,6 +193,7 @@ CRITICAL REQUIREMENTS:
 - Keep summary under 200 words total - be brief
 - Sources: US State Dept, UK FCDO, BBC, Reuters, Le Monde OK. NO Al Jazeera, NO RT
 - If you can't be specific, don't include it
+- WATCH FACTORS: Always consider regional context - neighboring conflicts, upcoming elections, diplomatic tensions, seasonal risks
 """
     
     return base_prompt
@@ -239,12 +260,13 @@ def analyze_country(country_name, identity_layer="base", base_analysis=None):
     # Build prompt
     prompt = build_analysis_prompt(country_name, identity_layer, nsc_level, base_analysis)
     
+    # ALWAYS add current date/time first
+    current_time = datetime.now(timezone.utc).strftime("%B %d, %Y at %H:%M UTC")
+    prompt = f"=== CURRENT DATE/TIME ===\nToday is: {current_time}\n\nIMPORTANT: You are analyzing the situation AS OF this date.\n- Do NOT describe future events (after {current_time}) as if they already happened\n- You CAN mention upcoming future events (e.g., 'elections in March 2026') in watch_factors\n- Only cite past events that actually occurred BEFORE today's date\n\n{prompt}"
+    
     # Add recent headlines as context
     if recent_headlines:
-        current_time = datetime.now(timezone.utc).strftime("%B %d, %Y at %H:%M UTC")
-        prompt += f"\n\n=== CURRENT DATE/TIME ===\n"
-        prompt += f"Today is: {current_time}\n\n"
-        prompt += f"=== RECENT NEWS CONTEXT ===\n"
+        prompt += f"\n\n=== RECENT NEWS CONTEXT ===\n"
         prompt += f"Here are recent headlines about {country_name}:\n\n"
         for i, headline in enumerate(recent_headlines[:30], 1):  # Max 30 headlines
             prompt += f"{i}. {headline}\n"
@@ -265,7 +287,7 @@ def analyze_country(country_name, identity_layer="base", base_analysis=None):
             model='gemini-2.5-flash',
             contents=prompt,
             config={
-                'temperature': 0.0,  # Maximum consistency - same input = same output
+                'temperature': 0.0,  # Maximum consistency
                 'top_p': 0.95,
                 'top_k': 40
             }
@@ -290,7 +312,15 @@ def analyze_country(country_name, identity_layer="base", base_analysis=None):
         
         # Self-verification: Check for hallucinations
         print("[>] Running hallucination check...")
-        verify_prompt = f"""You are a fact-checker. Review this travel security analysis for {country_name} and identify ONLY serious factual errors that would mislead travelers.
+        current_time_check = datetime.now(timezone.utc).strftime("%B %d, %Y at %H:%M UTC")
+        verify_prompt = f"""You are a fact-checker. The current date is {current_time_check}.
+
+Review this travel security analysis for {country_name} and identify ONLY serious factual errors that would mislead travelers.
+
+CRITICAL: The analysis is dated {current_time_check}. Check if the analysis incorrectly describes future events (dates AFTER {current_time_check}) as if they already happened in the past. This is a fabrication.
+
+ACCEPTABLE: Mentioning upcoming future events in watch_factors (e.g., "elections scheduled for March 2026")
+UNACCEPTABLE: Describing future events as past (e.g., "protests occurred in March 2026" when today is February 2026)
 
 Analysis to verify:
 {json.dumps(analysis, indent=2)}
