@@ -171,36 +171,69 @@ def baseline_already_exists(country_id, identity_layer):
 
 def calculate_total_score(category_scores):
     """
-    Veto-class categories: Armed Conflict, Regional Instability, Terrorism, Civil Strife
-    - If any veto category is RED or PURPLE - total is at least that level
-    - Otherwise - weighted average (veto categories count double)
+    Total score logic — three layers applied in priority order:
+
+    LAYER 1 — HARD VETO (overrides everything, total = that level):
+      armed_conflict RED    → total RED
+      armed_conflict PURPLE → total PURPLE
+      These are non-negotiable: if there is active widespread conflict or full-scale war
+      on the country's territory, the overall rating matches it.
+
+    LAYER 2 — WEIGHTED AVERAGE (determines base total when no hard veto):
+      All 7 categories contribute. Security categories count DOUBLE:
+        double weight: armed_conflict, regional_instability, terrorism, civil_strife
+        single weight: crime, health, infrastructure
+      regional_instability has NO hard veto — a dangerous neighbourhood raises the average
+      but does not force a specific total by itself.
+
+    LAYER 3 — SOFT FLOORS (terrorism and civil_strife — floor only, avg can push higher):
+      terrorism  PURPLE → total at least RED   (near-weekly attacks = serious, not auto-PURPLE)
+      terrorism  RED    → total at least ORANGE
+      civil_strife PURPLE → total at least RED (coup/civil war = serious, not auto-PURPLE total)
+      civil_strife RED    → total at least ORANGE
+      These floors prevent a country with severe terrorism but otherwise normal conditions
+      from scoring too low, while not automatically making it PURPLE.
+
+    RESULT: The highest of (hard veto | weighted avg | soft floor) wins.
     """
-    veto_categories  = ["armed_conflict", "regional_instability", "terrorism", "civil_strife"]
-    all_categories   = veto_categories + ["crime", "health", "infrastructure"]
-    level_to_int     = {"GREEN": 1, "YELLOW": 2, "ORANGE": 3, "RED": 4, "PURPLE": 5}
-    int_to_level     = {1: "GREEN", 2: "YELLOW", 3: "ORANGE", 4: "RED", 5: "PURPLE"}
+    all_categories = ["armed_conflict", "regional_instability", "terrorism", "civil_strife",
+                      "crime", "health", "infrastructure"]
+    security_cats  = {"armed_conflict", "regional_instability", "terrorism", "civil_strife"}
+    level_to_int   = {"GREEN": 1, "YELLOW": 2, "ORANGE": 3, "RED": 4, "PURPLE": 5}
+    int_to_level   = {1: "GREEN", 2: "YELLOW", 3: "ORANGE", 4: "RED", 5: "PURPLE"}
 
-    # Check veto
-    max_veto = max(
-        level_to_int.get(category_scores.get(cat, "GREEN"), 1)
-        for cat in veto_categories
-    )
-    if max_veto >= 4:
-        return int_to_level[max_veto]
+    def lvl(cat):
+        return level_to_int.get(category_scores.get(cat, "GREEN"), 1)
 
-    # Weighted average
+    # ── LAYER 1: Hard veto — armed_conflict RED/PURPLE ───────────────────────
+    ac = lvl("armed_conflict")
+    if ac >= 4:
+        return int_to_level[ac]
+
+    # ── LAYER 2: Weighted average ─────────────────────────────────────────────
     weighted_sum = sum(
-        level_to_int.get(category_scores.get(cat, "GREEN"), 1) * (2 if cat in veto_categories else 1)
+        lvl(cat) * (2 if cat in security_cats else 1)
         for cat in all_categories
     )
-    total_weight = sum(2 if cat in veto_categories else 1 for cat in all_categories)
+    total_weight = sum(2 if cat in security_cats else 1 for cat in all_categories)
     avg = weighted_sum / total_weight
 
-    if avg <= 1.4: return "GREEN"
-    if avg <= 2.4: return "YELLOW"
-    if avg <= 3.4: return "ORANGE"
-    if avg <= 4.4: return "RED"
-    return "PURPLE"
+    if avg <= 1.4:   raw = "GREEN"
+    elif avg <= 2.4: raw = "YELLOW"
+    elif avg <= 3.4: raw = "ORANGE"
+    elif avg <= 4.4: raw = "RED"
+    else:            raw = "PURPLE"
+
+    # ── LAYER 3: Soft floors — terrorism and civil_strife ────────────────────
+    ter = lvl("terrorism")
+    cs  = lvl("civil_strife")
+    max_ter_cs = max(ter, cs)
+
+    if max_ter_cs == 5:   floor = "RED"     # PURPLE terror/strife → at least RED
+    elif max_ter_cs == 4: floor = "ORANGE"  # RED terror/strife → at least ORANGE
+    else:                 floor = "GREEN"   # no floor
+
+    return int_to_level[max(level_to_int[raw], level_to_int[floor])]
 
 
 # =============================================================================
@@ -506,30 +539,136 @@ INTELLIGENCE BRIEFING (sourced from current web search, {today}):
 
 {f"BASE LAYER CONTEXT: {json.dumps(base_baseline.get('scores', {}))}" if base_baseline else ""}
 
+=== CRITICAL RULE: CATEGORY INDEPENDENCE ===
+
+Score each of the 7 categories COMPLETELY INDEPENDENTLY.
+
+A country's score in one category has ZERO automatic effect on any other category.
+A country can be at war (armed_conflict PURPLE) and still have:
+  - GREEN health        if hospitals are functioning and traveler medical care is available
+  - GREEN infrastructure if roads, power, water, and internet work normally
+  - YELLOW crime        if criminals are not targeting travelers
+
+DO NOT inflate health, infrastructure, or crime scores just because there is a conflict.
+Only score those categories higher if the briefing contains SPECIFIC evidence that
+those systems are damaged, collapsed, or directly affected.
+
+EXAMPLES OF CORRECT CATEGORY INDEPENDENCE:
+  Israel (March 2026, active war):
+    - armed_conflict PURPLE  ✓ (active multi-front war)
+    - terrorism PURPLE       ✓ (near-daily attacks, terrorism integral to war)
+    - health GREEN           ✓ (world-class hospitals, Hadassah/Sourasky/Sheba operating normally)
+    - infrastructure YELLOW  ✓ (roads, power, water, internet all function. Minor disruption
+                                from missile alerts. No infrastructure collapse.)
+    - crime YELLOW           ✓ (low civilian crime, travelers not targeted by criminals)
+
+  Iran (March 2026, authoritarian state at war):
+    - armed_conflict PURPLE  ✓ (direct war with Israel, Israeli airstrikes, Iranian missile attacks)
+    - civil_strife PURPLE    ✓ (systematic crackdown, protesters killed, no rule of law for dissent)
+    - terrorism PURPLE       ✓ (state sponsor of terror, IRGC operations, foreign hostages)
+    - infrastructure ORANGE  ✓ (roads work, power works with cuts, internet heavily censored —
+                                NOT collapsed. Iran is a functioning country. Roads, bridges,
+                                water systems all operate. Score based on traveler experience,
+                                not geopolitical tension.)
+    - health ORANGE          ✓ (hospitals function but lack some medicines due to sanctions.
+                                Urban hospitals can treat emergencies. NOT collapsed.)
+    - crime YELLOW           ✓ (Iran has LOWER street crime than most Middle Eastern countries.
+                                Traveler mugging/robbery is rare. NOT PURPLE.)
+
+  Netherlands:
+    - crime GREEN            ✓ (~0.9 homicides per 100k — well below YELLOW threshold of 5)
+    - terrorism ORANGE       ✓ (2019 Utrecht attack, ongoing credible threats)
+
+  Australia:
+    - health GREEN           ✓ (world-class healthcare system — same tier as EU, USA, Japan)
+    - infrastructure GREEN   ✓ (road fatality rate ~4/100k, modern utilities — clearly GREEN)
+    - crime GREEN            ✓ (~1.8 homicides/100k — clearly GREEN)
+
+  France:
+    - armed_conflict GREEN   ✓ (no fighting on French territory)
+    - crime YELLOW           ✓ (~1.3 homicides/100k — YELLOW threshold starts at 5)
+    - civil_strife ORANGE    ✓ (periodic protests with violence, not RED widespread unrest)
+
+  Poland:
+    - armed_conflict YELLOW  ✓ (no fighting on Polish territory despite bordering Ukraine)
+    - crime GREEN/YELLOW     ✓ (~0.7 homicides/100k — GREEN by any measure)
+    - health YELLOW          ✓ (adequate healthcare, EU member state)
+
+=== STRICT PURPLE LIMITS FOR HEALTH, CRIME, INFRASTRUCTURE ===
+
+NEVER assign PURPLE to health, crime, or infrastructure unless:
+
+  Health PURPLE:    Healthcare system has physically COLLAPSED. Hospitals are bombed/closed.
+                    No emergency care available anywhere in major cities.
+                    (True examples: Yemen 2023, Syria 2015-2019, Gaza 2024)
+                    NOT PURPLE just because: sanctions strain supplies, system is under-funded,
+                    or doctors are leaving. Iran, Russia, North Korea = ORANGE at most.
+
+  Crime PURPLE:     Travelers are SYSTEMATICALLY targeted by criminal organisations.
+                    No-go zones where criminals control territory and police don't enter.
+                    (True examples: parts of Mexico gang territory, parts of DRC)
+                    NOT PURPLE just because: the country is authoritarian, or there are
+                    protests, or it's a war zone. Iran = YELLOW (low street crime).
+
+  Infrastructure PURPLE: Infrastructure has PHYSICALLY COLLAPSED. No roads, no power,
+                    no water, no communications in major cities.
+                    (True examples: Libya active war zones, Yemen 2023)
+                    NOT PURPLE just because: power cuts are frequent, or roads are poor,
+                    or internet is censored. Iran, Russia = ORANGE. Israel = YELLOW.
+
+If you are considering PURPLE for health, crime, or infrastructure, ask yourself:
+"Can a traveler in the capital city get emergency medical treatment, walk the streets
+without being robbed, and get from A to B?" If yes → not PURPLE.
+
+=== END CRITICAL RULE ===
+
 SCORING SCALE AND DEFINITIONS:
 
 ARMED CONFLICT — Score based on conflict ON THE COUNTRY'S TERRITORY or directly threatening it.
   GREEN:  No armed conflict. Country is not at war.
-  YELLOW: Localized or low-level conflict in remote border areas. Does not affect travelers.
-  ORANGE: Active conflict in parts of the country. Traveler movement restricted in conflict zones.
-  RED:    Widespread active conflict. Multiple regions unsafe. Capital or major cities threatened.
-  PURPLE: Full-scale war. Active fighting in/near major cities. Do not travel.
-  NOTE: If a country's military is deployed ABROAD in an overseas conflict but there is no
-  fighting on home soil, this does NOT raise the armed_conflict score above YELLOW at most.
+  YELLOW: Localized or low-level conflict in remote border areas only. Does not affect
+          traveler movement. OR overseas military deployment with zero home-soil fighting.
+  ORANGE: Active conflict in parts of the country. Traveler movement restricted in conflict
+          zones. Capital and major cities safe. Under 500 deaths/month nationally.
+  RED:    Widespread conflict affecting multiple regions OR capital/large cities threatened.
+          (Either condition alone is sufficient — does not require both.)
+          OR regular missile/rocket/airstrike attacks on populated areas regardless of
+          death count — even intercepted missiles count if they are routine and ongoing.
+  PURPLE: Full-scale war. Active fighting in or near capital or major cities. Daily incoming
+          fire. Territory actively contested across multiple fronts. Do not travel.
+  NOTE: Overseas military deployment = YELLOW at most, never RED or PURPLE.
+  NOTE: Regular incoming missiles = RED minimum, even if mostly intercepted.
 
 REGIONAL INSTABILITY — Score based on how much neighboring/regional conflicts affect THIS country.
   GREEN:  Stable neighborhood. No meaningful spillover risk.
   YELLOW: Some regional tensions. Low direct spillover risk.
   ORANGE: Active regional conflict with documented spillover (refugees, cross-border incidents).
-  RED:    Direct threat from regional conflict. Missile/attack risk. Borders under pressure.
+  RED:    Direct threat from regional conflict. Missile/attack risk from neighbors.
+          Borders under pressure. Meaningful chance of being drawn into conflict.
   PURPLE: Country is a direct participant or frontline state in a regional war.
 
 TERRORISM — Score based on active terrorist threat to travelers.
-  GREEN:  No credible threat. No significant incidents in 5+ years.
-  YELLOW: Low-level threat. Occasional incidents but no sustained campaign.
-  ORANGE: Elevated threat. Active groups, multiple incidents in past 2 years.
-  RED:    High threat. Recent mass-casualty attacks (multiple deaths). Active ongoing campaign.
-  PURPLE: Extreme threat. Systematic targeting. Foreign travelers specifically targeted.
+  GREEN:  No credible threat. No significant attacks in 5+ years. No active organised groups.
+  YELLOW: Low-level threat. Foiled plots or minor incidents only. No fatalities in 3+ years.
+          OR a single isolated incident with no evidence of repeat capability.
+  ORANGE: Credible active threat. An organised group with demonstrated capability exists.
+          1-2 attacks with casualties (1-4 deaths each) in past 2 years. OR a single
+          major lone-wolf attack (even with many deaths) with NO evidence of organised
+          group or repeat threat — treat as ORANGE until further attacks occur.
+  RED:    Active organised campaign. Multiple attacks in past 2 years with deaths. OR
+          3+ attacks (any scale, including foiled) in past 12 months by an identified group
+          with stated intent to continue. OR persistent monthly incidents (even if low
+          casualty) by an active group. OR systematic targeting of a specific ethnic/
+          national group in multiple separate incidents by organised actors.
+          KEY: RED requires evidence of an organised group with proven capability AND
+          ongoing motivation — a single lone-wolf attack does NOT automatically = RED,
+          even if it killed 6+ people.
+  PURPLE: Extreme, sustained campaign. Weekly or near-weekly attacks of any scale by
+          organised actors. OR 3+ attacks with multiple deaths (2+) each in the past year.
+          OR terrorism is integral to an active war (attacks are part of military campaign).
+          PURPLE is the superlative of RED — it requires both frequency AND evidence of
+          sustained organised capability, not just a single catastrophic event.
+  NOTE: Frequency + organised group = key discriminators. Scale alone is not sufficient.
 
 CIVIL STRIFE — Score based on political violence affecting travelers.
   GREEN:  Stable. Protests are peaceful and rare.
@@ -539,11 +678,20 @@ CIVIL STRIFE — Score based on political violence affecting travelers.
   PURPLE: Coup, civil war, or collapse of public order. Do not travel.
 
 CRIME — Score based on crime rates affecting travelers specifically.
-  GREEN:  Low crime. Safe for travelers with normal precautions.
-  YELLOW: Moderate crime. Petty theft, pickpocketing. Standard urban precautions.
-  ORANGE: Elevated crime. Robbery, assault, vehicle theft. Avoid certain areas. Vary precautions.
-  RED:    High crime. Kidnapping risk. Violent crime affecting travelers. Significant precautions.
-  PURPLE: Extreme crime. Systematic targeting of foreigners. Criminal no-go zones.
+  GREEN:  Low crime. Safe for travelers with normal precautions. Petty theft possible.
+  YELLOW: Moderate crime. Pickpocketing in tourist areas. Standard urban awareness. Rare
+          violent incidents. Travelers are not a specific target.
+  ORANGE: Elevated crime. Robbery, assault, vehicle theft possible. Avoid certain areas.
+          Kidnapping risk limited to specific provinces. Heightened precautions needed.
+  RED:    High crime. Documented kidnapping-for-ransom targeting foreigners. Violent crime
+          common. Criminal gangs active. Significant precautions required.
+  PURPLE: Criminal organisations exercise SUBSTANTIAL territorial control over multiple
+          states, provinces, or large regions — state has effectively ceded governance of
+          significant territory. Travelers face systemic risk throughout those regions.
+          NOTE: A criminal gang controlling a neighbourhood, or cartel activity in one
+          city, does NOT = PURPLE. Substantial means entire regions/states where the
+          state cannot operate. (Examples: parts of DRC, certain Mexican states.
+          The USA overall is NOT PURPLE even with gang violence in specific cities.)
 
 HEALTH — Score based on disease risk and healthcare access for travelers.
   GREEN:  Good healthcare. Standard vaccinations sufficient. No significant disease risk.
@@ -552,70 +700,140 @@ HEALTH — Score based on disease risk and healthcare access for travelers.
   RED:    Poor healthcare infrastructure. Active disease outbreaks. Medical evacuation likely needed.
   PURPLE: Healthcare system collapsed. Epidemic/pandemic conditions. Extreme medical risk.
 
-INFRASTRUCTURE — Score based on travel infrastructure quality and safety.
-  GREEN:  Modern infrastructure. Safe roads, reliable transport, good utilities.
-  YELLOW: Generally good but some gaps. Rural roads less safe. Minor transport issues.
-  ORANGE: Unreliable infrastructure in parts. Road safety concerns. Power/water interruptions.
-  RED:    Poor infrastructure. Dangerous roads. Unreliable utilities. Significant disruption risk.
-  PURPLE: Infrastructure collapsed. No reliable transport, power, water, or communications.
+INFRASTRUCTURE — Score based on the PHYSICAL STATE of roads, power, water, and transport.
+  GREEN:  Modern, reliable infrastructure. Safe roads, reliable power/water/internet.
+  YELLOW: Generally good with some gaps. Rural roads less safe. Urban utilities reliable.
+  ORANGE: Unreliable infrastructure. Frequent power/water outages. Roads dangerous in regions.
+  RED:    Poor infrastructure nationwide. OR infrastructure physically damaged by conflict.
+  PURPLE: Infrastructure PHYSICALLY COLLAPSED in major cities. No roads, power, water, comms.
+  CRITICAL: Score infrastructure on PHYSICAL state only — not on security conditions.
+  Missile alerts, curfews, and security restrictions are armed_conflict factors.
+  A country where roads/power/water/internet function normally = GREEN or YELLOW on
+  infrastructure even during an active war. Only score higher if the briefing contains
+  SPECIFIC evidence of physical infrastructure destruction or system-wide failure.
+  Israel (March 2026) = YELLOW infrastructure (roads work, power/water/internet normal,
+  minor disruption from alerts). Iran = ORANGE (sanctions cause shortages, not collapse).
 
 QUANTITATIVE THRESHOLDS (use these numbers, not vague descriptions):
 
 TERRORISM thresholds:
-  GREEN:  0 attacks with fatalities in past 5 years. No credible active groups.
-  YELLOW: Foiled plots or minor incidents only. 0-1 total fatalities in 3 years.
-  ORANGE: 1-2 attacks with casualties in past 2 years (1-4 deaths each). OR active organised
-          group with demonstrated capability but limited recent activity.
-  RED:    Single mass-casualty attack (5+ deaths) in past 12 months. OR 2+ fatal attacks
-          in past 12 months. OR persistent high-frequency incidents with ongoing threat assessment.
-  PURPLE: Weekly/monthly mass-casualty attacks. Foreigners specifically targeted.
-          State cannot guarantee security in any major area.
+  GREEN:  0 attacks with fatalities in past 5 years. No credible active groups operating.
+  YELLOW: 0-1 deaths from terrorism in past 3 years. Foiled plots only. OR a single
+          isolated lone-wolf attack with no evidence of organised group behind it and
+          no further attacks since. Lone-wolf = YELLOW until repeat pattern emerges.
+  ORANGE: Organised group with demonstrated attack capability exists in the country.
+          1-2 attacks with 1-4 deaths each in past 2 years by an organised actor.
+          A lone-wolf attack with high death count (even 6+) but NO organised group
+          = ORANGE, not RED. Do not score RED for a lone-wolf incident alone.
+  RED:    Active organised campaign with documented repeat intent. Requires BOTH:
+          (a) an identified organised group with stated/demonstrated ongoing intent, AND
+          (b) multiple attacks in past 2 years (2+) with deaths, OR 3+ attacks in past
+          12 months by the same or affiliated group, OR persistent monthly incidents.
+          Systematic targeting of a specific ethnic/national group in multiple incidents
+          by organised actors also = RED.
+  PURPLE: Sustained high-frequency organised campaign: weekly/near-weekly attacks of any
+          scale by organised actors. OR 3+ attacks each with 2+ deaths in the past year
+          by organised groups. OR terrorism is integral to an active war (military campaign).
+          PURPLE = superlative of RED. Both frequency AND organised capability required.
 
 ARMED CONFLICT thresholds:
   GREEN:  No fighting on national territory.
   YELLOW: Historical/frozen conflict in remote border areas only. OR overseas military
           deployment with zero home-territory fighting.
   ORANGE: Active conflict in less than 20% of territory. Capital and major cities safe.
-          Under 1,000 conflict deaths per month.
-  RED:    Widespread conflict, multiple regions. Capital or major cities threatened.
-          1,000-10,000 conflict deaths per month.
-  PURPLE: Full-scale war. Active fighting in or near capital. Over 10,000 deaths per month.
+          Under 500 conflict deaths per month.
+  RED:    Widespread conflict affecting multiple regions. OR regular missile/rocket attacks
+          OR airstrikes on populated areas — regardless of death count. Capital or major
+          cities threatened. OR 500+ conflict deaths per month nationally.
+          NOTE: Regular incoming missiles/rockets = RED minimum, even if intercepted.
+  PURPLE: Full-scale war. Active fighting in or near capital or major cities. Daily
+          missile/air attacks. Territory actively contested. Multiple active fronts.
 
-CRIME thresholds (intentional homicide rate per 100,000/year as anchor):
+CRIME thresholds (intentional homicide rate per 100,000/year as primary anchor — supplement
+with kidnapping risk, organised crime penetration, and armed robbery patterns):
   GREEN:  Under 5 per 100k. Low organised crime. Travelers safe with normal precautions.
-  YELLOW: 5-15 per 100k. Petty theft common. Standard urban awareness needed.
-  ORANGE: 15-30 per 100k. OR kidnapping risk in specific areas. Avoid certain neighbourhoods.
-  RED:    30-60 per 100k. OR systematic kidnapping targeting foreigners.
-  PURPLE: Over 60 per 100k. Travelers actively targeted. Criminal organisations control territory.
+          Petty theft possible but violent crime against travelers rare.
+  YELLOW: 5-15 per 100k. Petty theft, pickpocketing common in tourist areas. Standard
+          urban awareness needed. Violent crime against travelers uncommon.
+  ORANGE: 15-30 per 100k. OR kidnapping risk in specific provinces/areas. Robbery and
+          carjacking possible. Avoid certain neighbourhoods. Heightened precautions.
+  RED:    30-60 per 100k. OR documented kidnapping-for-ransom targeting foreigners.
+          OR criminal organisations controlling significant territory traveler may cross.
+          Significant security precautions required. High-value areas/vehicles targeted.
+  PURPLE: Over 60 per 100k. OR criminal organisations exercise SUBSTANTIAL territorial
+          control over multiple states/provinces — meaning the state has effectively
+          ceded governance of significant geographic areas (not just neighbourhoods).
+          Examples: parts of DRC (no state presence), certain Mexican states (cartel rule).
+          NOT PURPLE: gang violence in specific city neighbourhoods; cartel presence in
+          one city; high crime with state still functioning nationally. The USA is NOT
+          PURPLE despite gang violence. Mexico overall is RED (not PURPLE) despite cartels.
+  NOTE: Homicide rate is the anchor. Supplement with kidnapping risk and territorial
+  control evidence. A country needs MULTIPLE serious crime factors to reach PURPLE.
 
 HEALTH thresholds:
   GREEN:  High-income country with functional hospital system. Routine vaccinations sufficient.
-          No active disease outbreaks. (Australia, EU, USA, Japan = GREEN)
-  YELLOW: Adequate urban healthcare. Some rural limitations. Minor endemic disease risk.
+          No active disease outbreaks. (Australia, EU, USA, Japan, Singapore = GREEN)
+  YELLOW: Adequate urban healthcare. Some rural limitations. Minor endemic disease risk
+          (e.g. traveler's diarrhoea). Travel health insurance advisable.
   ORANGE: Limited healthcare outside major cities. Active endemic diseases (malaria, dengue,
-          cholera). Medical evacuation insurance strongly recommended.
+          cholera in specific regions). Medical evacuation insurance strongly recommended.
   RED:    Poor healthcare infrastructure nationwide. Active epidemic or outbreak.
-          Medical evacuation very likely needed if seriously ill.
-  PURPLE: Healthcare system has collapsed. No safe medical care available.
+          Standard surgical care not reliably available. Medical evacuation very likely needed.
+  PURPLE: Healthcare system has collapsed or been destroyed. No safe medical care available.
 
-INFRASTRUCTURE thresholds:
+INFRASTRUCTURE thresholds (road fatality rate per 100,000/year as primary anchor — also
+consider power/water reliability, internet access, and transport system reliability):
   GREEN:  Road fatality rate under 10 per 100k/year. Reliable power, water, internet.
-          Modern transport. (Australia, EU, USA = GREEN)
-  YELLOW: Road deaths 10-20 per 100k. Generally reliable utilities. Some rural gaps.
-  ORANGE: Road deaths 20-30 per 100k. Frequent power or water outages. Transport unreliable.
-  RED:    Road deaths over 30 per 100k. Utilities unreliable everywhere.
+          Modern transport infrastructure. (Australia, EU, USA, Japan = GREEN)
+  YELLOW: Road deaths 10-20 per 100k. Generally reliable utilities. Some rural or
+          seasonal gaps. Public transport functional but variable quality.
+  ORANGE: Road deaths 20-30 per 100k. OR frequent power outages affecting travel planning.
+          OR unreliable public transport. Rural roads dangerous. Water supply variable.
+  RED:    Road deaths over 30 per 100k. OR utilities unreliable nationwide.
+          OR transport infrastructure significantly damaged (conflict/disaster).
   PURPLE: Infrastructure has collapsed. No reliable transport, power, water, or communications.
+          Movement extremely dangerous or impossible without private security.
 
 CALIBRATION EXAMPLES:
   Australia: Crime GREEN (<2 homicides/100k). Health GREEN (excellent hospitals).
-  Infrastructure GREEN (modern). Terrorism RED only if Dec 2025 attack killed 5+ people.
-  Armed_conflict YELLOW (overseas deployment, no home-soil fighting).
-  Israel (March 2026): PURPLE armed_conflict (active multi-front war, missiles on cities).
-  France: YELLOW overall. ORANGE terrorism (2015-2024 attack history, active threat level).
-          GREEN armed_conflict. YELLOW crime (~1.3 homicides/100k).
+  Infrastructure GREEN (modern). Armed_conflict YELLOW (overseas deployment only, no
+  home-soil fighting). Terrorism: ORANGE if the Dec 2025 Bondi attack is classified as
+  terrorism (6 deaths, lone attacker — motive disputed). YELLOW if classified as criminal/
+  mental health incident rather than political violence. Use your judgement on classification.
 
-VETO RULE: If any of armed_conflict, regional_instability, terrorism, or civil_strife
-is RED or PURPLE, the total_score must be at least that level.
+  Israel (March 2026): PURPLE armed_conflict (multi-front war, daily missile strikes on
+  cities — regular incoming rockets = RED minimum; active war = PURPLE). PURPLE terrorism
+  (near-daily incidents across the country, terrorism integral to active war).
+
+  France: ORANGE terrorism (2015-2024 sustained attack history; Nice, Paris, Strasbourg;
+  active threat level declared). GREEN armed_conflict. YELLOW crime (~1.3 homicides/100k).
+
+  Netherlands: YELLOW overall. Crime YELLOW (~0.9 homicides/100k, organized crime present
+  but travelers not targeted). Terrorism ORANGE (credible threats, 2019 Utrecht attack).
+
+  Mexico: RED crime (>25 homicides/100k nationally, cartel kidnapping risk in multiple states,
+  cartel territorial control in significant areas). ORANGE civil_strife (cartel violence
+  affecting civilian movement). Infrastructure ORANGE (road safety poor in cartel zones).
+
+  Poland: armed_conflict YELLOW — NOT RED. No fighting on Polish territory. Poland is a
+  NATO member. Occasional Russian drone incursions into Polish airspace do not constitute
+  active armed conflict on Polish soil. regional_instability RED (Ukraine war on border,
+  Russian threat, militarisation of Belarus border). crime GREEN (~0.7 homicides/100k).
+  health YELLOW (EU member, adequate hospitals). infrastructure GREEN (modern EU roads).
+  Total will be ORANGE from weighted average (regional instability RED raises the average
+  but does not trigger the armed_conflict hard veto since armed_conflict = YELLOW).
+
+  United Kingdom: armed_conflict YELLOW. terrorism ORANGE (organised groups exist, threat
+  level elevated, but no sustained mass-casualty campaign recently). crime YELLOW
+  (~1.2 homicides/100k — clearly below the 5/100k threshold for YELLOW). health GREEN
+  (NHS functional). infrastructure GREEN (modern). Total ORANGE from weighted average.
+
+TOTAL SCORE LOGIC (Python calculates this — for your reference only):
+  1. armed_conflict RED/PURPLE → hard veto, total forced to that level
+  2. Otherwise: weighted average (security cats x2, others x1)
+  3. terrorism or civil_strife PURPLE → total at least RED
+  4. terrorism or civil_strife RED → total at least ORANGE
+  regional_instability has NO hard veto — it only affects the weighted average.
 
 Return ONLY this JSON (no markdown, no extra text):
 {{
@@ -629,13 +847,13 @@ Return ONLY this JSON (no markdown, no extra text):
     "infrastructure":       "GREEN|YELLOW|ORANGE|RED|PURPLE"
   }},
   "stability_justifications": {{
-    "armed_conflict":       "Why this score. What specific evidence from the briefing. What would change it.",
-    "regional_instability": "...",
-    "terrorism":            "...",
-    "civil_strife":         "...",
-    "crime":                "...",
-    "health":               "...",
-    "infrastructure":       "..."
+    "armed_conflict":       "Max 40 words. Cite specific evidence. What would change it.",
+    "regional_instability": "Max 40 words. Name specific neighbouring conflicts.",
+    "terrorism":            "Max 40 words. Name the group or incident. Lone-wolf or organised?",
+    "civil_strife":         "Max 40 words. Cite specific unrest events.",
+    "crime":                "Max 40 words. Include homicide rate per 100k if known.",
+    "health":               "Max 40 words. Hospital access, disease risk.",
+    "infrastructure":       "Max 40 words. Physical state of roads/power/water only."
   }},
   "confidence_levels": {{
     "armed_conflict":       "HIGH|MEDIUM|LOW|INSUFFICIENT",
@@ -646,9 +864,9 @@ Return ONLY this JSON (no markdown, no extra text):
     "health":               "HIGH|MEDIUM|LOW|INSUFFICIENT",
     "infrastructure":       "HIGH|MEDIUM|LOW|INSUFFICIENT"
   }},
-  "baseline_narrative": "3-4 paragraphs. Specific, direct. No AI filler. Based strictly on the briefing above.",
-  "veto_explanation": "Explain the total score calculation — which categories triggered veto (if any), or weighted average result.",
-  "sources_used": ["List specific sources and incidents from the briefing. Be concrete."],
+  "baseline_narrative": "3-4 paragraphs. Specific, direct. No AI filler. Based on the briefing.",
+  "veto_explanation": "One sentence: which hard veto fired, or explain weighted average result.",
+  "sources_used": ["2-4 specific sources or incidents from the briefing with dates."],
   "recommendations": {{
     "movement_access":        "one concrete sentence",
     "emergency_preparedness": "one concrete sentence",
@@ -657,7 +875,7 @@ Return ONLY this JSON (no markdown, no extra text):
     "crime_personal_safety":  "one concrete sentence",
     "travel_logistics":       "one concrete sentence"
   }},
-  "watch_factors": "2-4 specific developments to monitor with dates/timeframes where known."
+  "watch_factors": "2-3 specific structural developments to monitor."
 }}"""
 
     try:
@@ -678,7 +896,7 @@ Return ONLY this JSON (no markdown, no extra text):
         if text.endswith("```"):       text = text[:-3]
         text = text.strip()
 
-        # Extract JSON block (find outermost { })
+        # Extract outermost JSON block
         start = text.find("{")
         end   = text.rfind("}") + 1
         if start >= 0 and end > start:
@@ -688,17 +906,55 @@ Return ONLY this JSON (no markdown, no extra text):
         import re
         text = re.sub(r",\s*([}\]])", r"\1", text)
 
-        analysis = json.loads(text)
+        # Attempt full parse
+        try:
+            analysis = json.loads(text)
+        except json.JSONDecodeError as e:
+            # Fallback: extract just the scores block via regex — scores are the only
+            # required field. The rest (narrative, justifications) can be empty strings.
+            print(f"  [!] Full JSON parse failed ({e}). Attempting scores-only rescue...")
+            score_match = re.search(
+                r'"scores"\s*:\s*\{([^}]+)\}', text, re.DOTALL
+            )
+            if not score_match:
+                print(f"  [X] JSON rescue failed — no scores block found")
+                print(f"  Raw (first 300): {text[:300]}")
+                return None
 
-        # Attach the briefing so it can be stored for audit
+            scores_raw = "{" + score_match.group(1) + "}"
+            scores_raw = re.sub(r",\s*([}\]])", r"\1", scores_raw)
+            scores = json.loads(scores_raw)
+
+            # Reconstruct minimal analysis dict
+            analysis = {
+                "scores": scores,
+                "stability_justifications": {},
+                "confidence_levels": {},
+                "baseline_narrative": "[Parse rescue — narrative unavailable]",
+                "veto_explanation":   "[Parse rescue]",
+                "sources_used":       [],
+                "recommendations":    {},
+                "watch_factors":      "",
+            }
+            print(f"  [!] Scores rescued successfully. Narrative/justifications empty.")
+
+        # Validate: every score field must be a valid level
+        valid_levels = {"GREEN", "YELLOW", "ORANGE", "RED", "PURPLE"}
+        score_fields = ["armed_conflict", "regional_instability", "terrorism",
+                        "civil_strife", "crime", "health", "infrastructure"]
+        scores = analysis.get("scores", {})
+        for field in score_fields:
+            val = scores.get(field, "").strip().upper()
+            if val not in valid_levels:
+                print(f"  [!] Invalid score '{val}' for {field} — defaulting to ORANGE")
+                scores[field] = "ORANGE"
+        analysis["scores"] = scores
+
+        # Attach the briefing for audit
         analysis["_briefing"] = briefing
         print(f"  [OK] Scoring complete")
         return analysis
 
-    except json.JSONDecodeError as e:
-        print(f"  [X] JSON parse failed: {e}")
-        print(f"  Raw (first 300): {text[:300]}")
-        return None
     except Exception as e:
         print(f"  [X] Step 2 scoring failed: {e}")
         return None

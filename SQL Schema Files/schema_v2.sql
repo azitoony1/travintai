@@ -294,7 +294,7 @@ CREATE INDEX IF NOT EXISTS idx_annual_data_country_type
 -- No changes needed to dashboard.html.
 -- When Next.js replaces the dashboard, drop this view.
 -- =============================================================================
-CREATE OR REPLACE VIEW scores AS
+CREATE OR REPLACE VIEW scores WITH (security_invoker = on) AS
 SELECT DISTINCT ON (sh.country_id, sh.identity_layer)
     sh.id,
     sh.country_id,
