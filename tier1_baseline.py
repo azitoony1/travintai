@@ -511,20 +511,39 @@ Be specific: name actual groups, cite specific incidents with dates, give statis
 If there is an active war or major conflict, describe it clearly — do not soften it.
 This briefing will be used to assign threat scores. Accuracy is critical."""
 
-    try:
-        step1_response = gemini.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=briefing_prompt,
-            config=genai.types.GenerateContentConfig(
-                tools=[genai.types.Tool(google_search=genai.types.GoogleSearch())],
-                temperature=0.0,
-            )
-        )
-        briefing = step1_response.text.strip()
-        print(f"  [OK] Briefing complete ({len(briefing)} chars)")
+    # Models tried in order — 2.5 Flash preferred (best quality + search grounding)
+    # 1.5 Flash is the stable fallback (also supports search grounding, less demand)
+    STEP1_MODELS = ["gemini-2.5-flash", "gemini-1.5-flash"]
+    STEP2_MODELS = ["gemini-2.5-flash", "gemini-1.5-flash"]
 
-    except Exception as e:
-        print(f"  [X] Step 1 briefing failed: {e}")
+    import time as _time
+
+    briefing = None
+    for attempt in range(1, 4):  # up to 3 retries
+        for model_name in STEP1_MODELS:
+            try:
+                step1_response = gemini.models.generate_content(
+                    model=model_name,
+                    contents=briefing_prompt,
+                    config=genai.types.GenerateContentConfig(
+                        tools=[genai.types.Tool(google_search=genai.types.GoogleSearch())],
+                        temperature=0.0,
+                    )
+                )
+                briefing = step1_response.text.strip()
+                print(f"  [OK] Briefing complete ({len(briefing)} chars) [{model_name}]")
+                break  # success — stop trying models
+            except Exception as e:
+                err = str(e)
+                print(f"  [!] Step 1 failed on {model_name} (attempt {attempt}): {err[:80]}")
+        if briefing:
+            break
+        wait = attempt * 30
+        print(f"  [!] All models overloaded — waiting {wait}s before retry {attempt+1}/3...")
+        _time.sleep(wait)
+
+    if not briefing:
+        print(f"  [X] Step 1 failed after 3 attempts — skipping")
         return None
 
     # ── STEP 2: Scoring from Briefing (no search, pure JSON) ──────────────────
@@ -835,6 +854,34 @@ TOTAL SCORE LOGIC (Python calculates this — for your reference only):
   4. terrorism or civil_strife RED → total at least ORANGE
   regional_instability has NO hard veto — it only affects the weighted average.
 
+=== EVIDENCE GATE FOR INFRASTRUCTURE, HEALTH, AND CRIME ===
+
+For infrastructure, health, and crime — you MUST answer these pre-screening questions
+INSIDE the JSON (in the fields below) before assigning a score. The answers LOCK the score:
+
+INFRASTRUCTURE pre-screening (answer YES/NO based strictly on the briefing):
+  Q1: Are major roads physically passable in the capital/main cities?
+  Q2: Is electricity available in major cities (even with outages)?
+  Q3: Is tap water available in major cities?
+  Q4: Is mobile/internet connectivity available?
+  → If all YES → score GREEN or YELLOW. CANNOT score ORANGE+ without a specific quote
+    from the briefing describing physical road/power/water infrastructure damage.
+  → ORANGE only if: frequent power outages OR high road death rate confirmed in briefing.
+  → RED only if: utilities unreliable EVERYWHERE OR roads physically damaged by war.
+  → PURPLE only if: no roads, no power, no water, no comms in MAJOR CITIES.
+
+HEALTH pre-screening (answer YES/NO based strictly on the briefing):
+  Q1: Are hospitals in major cities open and treating patients?
+  Q2: Can a traveler get emergency surgery if needed?
+  → If both YES → score GREEN, YELLOW, or ORANGE at most. CANNOT score RED+ without a
+    specific quote describing hospital closures, epidemic, or system-wide failure.
+
+CRIME pre-screening (answer YES/NO based strictly on the briefing):
+  Q1: Are criminal organisations systematically robbing/kidnapping travelers on a routine basis?
+  Q2: Does the state lack control of MULTIPLE large provinces/states (not just neighbourhoods)?
+  → RED requires YES to Q1 OR homicide rate 30-60/100k confirmed in briefing.
+  → PURPLE requires YES to BOTH Q1 and Q2 with specific evidence.
+
 Return ONLY this JSON (no markdown, no extra text):
 {{
   "scores": {{
@@ -845,6 +892,17 @@ Return ONLY this JSON (no markdown, no extra text):
     "crime":                "GREEN|YELLOW|ORANGE|RED|PURPLE",
     "health":               "GREEN|YELLOW|ORANGE|RED|PURPLE",
     "infrastructure":       "GREEN|YELLOW|ORANGE|RED|PURPLE"
+  }},
+  "pre_screening": {{
+    "infrastructure_q1_roads_passable":     "YES|NO",
+    "infrastructure_q2_electricity":        "YES|NO",
+    "infrastructure_q3_water":              "YES|NO",
+    "infrastructure_q4_internet":           "YES|NO",
+    "infrastructure_physical_damage_quote": "Direct quote from briefing describing physical damage, OR 'none found'",
+    "health_q1_hospitals_open":             "YES|NO",
+    "health_q2_emergency_surgery":          "YES|NO",
+    "crime_q1_systematic_traveler_targeting": "YES|NO",
+    "crime_q2_state_lost_multiple_provinces": "YES|NO"
   }},
   "stability_justifications": {{
     "armed_conflict":       "Max 40 words. Cite specific evidence. What would change it.",
@@ -878,18 +936,34 @@ Return ONLY this JSON (no markdown, no extra text):
   "watch_factors": "2-3 specific structural developments to monitor."
 }}"""
 
+    text = None
+    for attempt in range(1, 4):
+        for model_name in STEP2_MODELS:
+            try:
+                step2_response = gemini.models.generate_content(
+                    model=model_name,
+                    contents=scoring_prompt,
+                    config=genai.types.GenerateContentConfig(
+                        temperature=0.0,
+                        # No search tool — keeps output clean JSON
+                    )
+                )
+                text = step2_response.text.strip()
+                break
+            except Exception as e:
+                err = str(e)
+                print(f"  [!] Step 2 failed on {model_name} (attempt {attempt}): {err[:80]}")
+        if text:
+            break
+        wait = attempt * 30
+        print(f"  [!] All models overloaded — waiting {wait}s before retry {attempt+1}/3...")
+        _time.sleep(wait)
+
+    if not text:
+        print(f"  [X] Step 2 failed after 3 attempts")
+        return None
+
     try:
-        step2_response = gemini.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=scoring_prompt,
-            config=genai.types.GenerateContentConfig(
-                temperature=0.0,
-                # No search tool here — keeps output clean JSON
-            )
-        )
-
-        text = step2_response.text.strip()
-
         # Strip markdown fences
         if text.startswith("```json"): text = text[7:]
         if text.startswith("```"):     text = text[3:]
@@ -948,6 +1022,45 @@ Return ONLY this JSON (no markdown, no extra text):
             if val not in valid_levels:
                 print(f"  [!] Invalid score '{val}' for {field} — defaulting to ORANGE")
                 scores[field] = "ORANGE"
+
+        # Evidence gate: enforce pre-screening answers against scores
+        # If the model answered YES to the physical systems questions but still scored
+        # infrastructure RED/PURPLE, that is a contradiction — cap it at ORANGE.
+        pre = analysis.get("pre_screening", {})
+        level_to_int = {"GREEN": 1, "YELLOW": 2, "ORANGE": 3, "RED": 4, "PURPLE": 5}
+
+        infra_score = scores.get("infrastructure", "GREEN")
+        if level_to_int.get(infra_score, 1) >= 4:  # RED or PURPLE
+            roads  = pre.get("infrastructure_q1_roads_passable", "").upper()
+            elec   = pre.get("infrastructure_q2_electricity", "").upper()
+            water  = pre.get("infrastructure_q3_water", "").upper()
+            net    = pre.get("infrastructure_q4_internet", "").upper()
+            quote  = pre.get("infrastructure_physical_damage_quote", "").lower()
+            systems_up = all(x == "YES" for x in [roads, elec, water, net] if x)
+            no_quote   = not quote or quote == "none found" or len(quote) < 20
+            if systems_up and no_quote:
+                print(f"  [!] Infrastructure pre-screening: all systems YES + no damage quote "
+                      f"→ capping {infra_score} → ORANGE")
+                scores["infrastructure"] = "ORANGE"
+
+        health_score = scores.get("health", "GREEN")
+        if level_to_int.get(health_score, 1) >= 4:  # RED or PURPLE
+            hosp = pre.get("health_q1_hospitals_open", "").upper()
+            surg = pre.get("health_q2_emergency_surgery", "").upper()
+            if hosp == "YES" and surg == "YES":
+                print(f"  [!] Health pre-screening: hospitals open + surgery available "
+                      f"→ capping {health_score} → ORANGE")
+                scores["health"] = "ORANGE"
+
+        crime_score = scores.get("crime", "GREEN")
+        if level_to_int.get(crime_score, 1) == 5:  # PURPLE only
+            target = pre.get("crime_q1_systematic_traveler_targeting", "").upper()
+            prov   = pre.get("crime_q2_state_lost_multiple_provinces", "").upper()
+            if not (target == "YES" and prov == "YES"):
+                print(f"  [!] Crime pre-screening: PURPLE requires both Q1+Q2 YES "
+                      f"→ capping PURPLE → RED")
+                scores["crime"] = "RED"
+
         analysis["scores"] = scores
 
         # Attach the briefing for audit
