@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Travint.ai — Tier 1 Baseline Establishment Pipeline
+Travint.ai - Tier 1 Baseline Establishment Pipeline
 
 PURPOSE:
   Creates the immutable structural baseline for a country/identity layer.
-  This is NOT daily news analysis — it captures deep, slow-moving structural
+  This is NOT daily news analysis - it captures deep, slow-moving structural
   conditions: legal environment, historical patterns, institutional factors,
   annual index scores, and government advisory anchors.
 
@@ -25,7 +25,7 @@ HOW TO RUN:
   All countries, base layer only:
     python tier1_baseline.py --all-countries --layer base
 
-  All countries, all layers (slow — use for first-time setup):
+  All countries, all layers (slow - use for first-time setup):
     python tier1_baseline.py --all-countries --all-layers
 
 OUTPUT:
@@ -56,7 +56,7 @@ if not all([SUPABASE_URL, SUPABASE_SERVICE_KEY, GEMINI_API_KEY]):
     print("[X] Missing environment variables. Check .env for SUPABASE_URL, SUPABASE_SERVICE_KEY, GEMINI_API_KEY")
     sys.exit(1)
 
-# Pipeline uses service key — it has write access
+# Pipeline uses service key - it has write access
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 gemini   = genai.Client(api_key=GEMINI_API_KEY)
 
@@ -117,7 +117,7 @@ def get_country_id(iso_code):
         result = supabase.table("countries").select("id").eq("iso_code", iso_code).execute()
         if result.data:
             return result.data[0]["id"]
-        print(f"[X] Country {iso_code} not found in database — run schema SQL first")
+        print(f"[X] Country {iso_code} not found in database - run schema SQL first")
         return None
     except Exception as e:
         print(f"[X] Database error: {e}")
@@ -172,8 +172,8 @@ def baseline_already_exists(country_id, identity_layer):
 def calculate_total_score(category_scores):
     """
     Veto-class categories: Armed Conflict, Regional Instability, Terrorism, Civil Strife
-    - If any veto category is RED or PURPLE → total is at least that level
-    - Otherwise → weighted average (veto categories count double)
+    - If any veto category is RED or PURPLE - total is at least that level
+    - Otherwise - weighted average (veto categories count double)
     """
     veto_categories  = ["armed_conflict", "regional_instability", "terrorism", "civil_strife"]
     all_categories   = veto_categories + ["crime", "health", "infrastructure"]
@@ -211,7 +211,7 @@ def build_baseline_prompt(country_name, identity_layer, nsc_level=None, base_bas
     """
     Build the Tier 1 baseline prompt.
 
-    Tier 1 is about STRUCTURAL conditions — not today's news.
+    Tier 1 is about STRUCTURAL conditions - not today's news.
     It captures slow-moving factors: legal environment, historical patterns,
     annual indices, institutional stability, demographic tensions.
     This baseline will be the reference point for all future Tier 2 change detection.
@@ -235,11 +235,11 @@ Today's date: {today}
 
 AUDIENCE: {layer_desc}
 
-━━━ WHAT A TIER 1 BASELINE IS ━━━
+=== WHAT A TIER 1 BASELINE IS ===
 
 This is NOT daily news analysis. You are capturing deep, slow-moving structural conditions:
 - Legal and institutional environment (laws, enforcement, judicial independence)
-- Historical conflict and crime patterns (not last week — the past 5-10 years)
+- Historical conflict and crime patterns (not last week - the past 5-10 years)
 - Annual index scores (RSF press freedom, UNODC homicide rates, ILGA LGBTQ+ rights, etc.)
 - Government advisory anchor levels (US State Dept, UK FCDO, Israeli NSC if applicable)
 - Demographic tensions and structural grievances that create long-term risk
@@ -250,7 +250,7 @@ What a Tier 1 baseline is NOT:
 - A summary of current events
 - Something that changes every few months (that's Tier 2's job)
 
-━━━ SCORING SCALE ━━━
+=== SCORING SCALE ===
 
 GREEN  (1): Safe / Normal structural conditions
 YELLOW (2): Elevated structural risk / Exercise caution
@@ -258,21 +258,21 @@ ORANGE (3): Significant structural risk / Heightened precautions
 RED    (4): High structural risk / Reconsider travel
 PURPLE (5): Extreme risk / Do not travel (active war, systematic targeting, no consular protection)
 
-━━━ 7 SECURITY CATEGORIES ━━━
+=== 7 SECURITY CATEGORIES ===
 
-1. Armed Conflict      — active war, military operations, territorial disputes with violence
-2. Regional Instability — neighboring conflicts with spillover potential; geopolitical tensions
-3. Terrorism           — organized terrorist groups, attack frequency, targeting patterns
-4. Civil Strife        — political violence, social unrest, protest movements with violence risk
-5. Crime               — organized crime, street crime, kidnapping, corruption affecting travelers
-6. Health              — disease risk, healthcare system quality, medical access for foreigners
-7. Infrastructure      — road safety, transport reliability, power/water/communications
+1. Armed Conflict      - active war, military operations, territorial disputes with violence
+2. Regional Instability - neighboring conflicts with spillover potential; geopolitical tensions
+3. Terrorism           - organized terrorist groups, attack frequency, targeting patterns
+4. Civil Strife        - political violence, social unrest, protest movements with violence risk
+5. Crime               - organized crime, street crime, kidnapping, corruption affecting travelers
+6. Health              - disease risk, healthcare system quality, medical access for foreigners
+7. Infrastructure      - road safety, transport reliability, power/water/communications
 """
 
     # Identity-specific instructions
     if identity_layer == "jewish_israeli":
         prompt += f"""
-━━━ JEWISH/ISRAELI IDENTITY LAYER ━━━
+=== JEWISH/ISRAELI IDENTITY LAYER ===
 
 START with the base layer structural conditions. Then adjust ONLY where being Jewish or Israeli
 creates a meaningfully different structural risk.
@@ -296,7 +296,7 @@ Use this as one anchor. Note if your structural assessment meaningfully differs.
 
     elif identity_layer == "solo_women":
         prompt += f"""
-━━━ SOLO WOMEN IDENTITY LAYER ━━━
+=== SOLO WOMEN IDENTITY LAYER ===
 
 START with the base layer structural conditions. Then adjust ONLY where being a solo woman
 creates a meaningfully different structural risk.
@@ -318,7 +318,7 @@ as a weapon of war). Do not inflate these scores just because the traveler is a 
 """
 
     prompt += """
-━━━ REQUIRED OUTPUT FORMAT ━━━
+=== REQUIRED OUTPUT FORMAT ===
 
 Return ONLY valid JSON. No markdown, no preamble.
 
@@ -351,13 +351,13 @@ Return ONLY valid JSON. No markdown, no preamble.
     "infrastructure":        "HIGH|MEDIUM|LOW|INSUFFICIENT"
   },
   "confidence_notes": {
-    "any_category_with_low_confidence": "Why confidence is low — missing data, conflicting sources, etc."
+    "any_category_with_low_confidence": "Why confidence is low - missing data, conflicting sources, etc."
   },
   "baseline_narrative": "3-4 paragraphs. Write like a human analyst briefing a colleague, not an AI writing a report. Be specific: cite index scores, name specific laws, give historical numbers. Explain what makes this country's structural situation distinctive for this traveler type. Avoid: 'complex', 'multifaceted', 'notably', 'furthermore', 'it is important to note'.",
   "veto_explanation": "If any veto category (armed_conflict, regional_instability, terrorism, civil_strife) is RED or PURPLE, explain why it overrides the overall score. Otherwise explain the weighted average logic.",
   "sources_used": [
     "List the specific sources/indices informing this baseline. Examples: 'US State Dept Level 2 Advisory', 'RSF Press Freedom Index 2024: rank 45/180', 'UNODC homicide rate 8.2/100k (2023)', 'ILGA: same-sex relations criminalized, up to 10 years'",
-    "Be specific — include scores/rankings/years where known",
+    "Be specific - include scores/rankings/years where known",
     "3-6 sources minimum"
   ],
   "recommendations": {
@@ -368,13 +368,13 @@ Return ONLY valid JSON. No markdown, no preamble.
     "crime_personal_safety":   "One concrete sentence",
     "travel_logistics":        "One concrete sentence"
   },
-  "watch_factors": "2-4 SPECIFIC structural factors to monitor. These are slow-moving structural risks, not today's news: 'Presidential election cycle due 2026 — historically accompanied by political violence', 'Peace agreement with [group] signed 2023 — compliance monitoring ongoing', 'Upcoming monsoon season June-September raises health and infrastructure risk annually'"
+  "watch_factors": "2-4 SPECIFIC structural factors to monitor. These are slow-moving structural risks, not today's news: 'Presidential election cycle due 2026 - historically accompanied by political violence', 'Peace agreement with [group] signed 2023 - compliance monitoring ongoing', 'Upcoming monsoon season June-September raises health and infrastructure risk annually'"
 }
 
 QUALITY RULES:
 - No placeholders: never use [Country], [Group], [Organization]
 - Be specific: numbers, names, years, rankings
-- LOW or INSUFFICIENT confidence is honest and builds trust — do not fake HIGH confidence
+- LOW or INSUFFICIENT confidence is honest and builds trust - do not fake HIGH confidence
 - Identity layers: only diverge from base when there is a CLEAR structural reason
 - Write baseline_narrative as if briefing a colleague who will act on this information
 """
@@ -441,7 +441,7 @@ def store_baseline(country_id, country_name, identity_layer, analysis, version_n
     scores      = analysis.get("scores", {})
     total_score = calculate_total_score(scores)
 
-    # ── 1. baseline_versions ────────────────────────────────────────────────
+    # -- 1. baseline_versions ------------------------------------------------
     try:
         baseline_row = {
             "country_id":               country_id,
@@ -463,7 +463,7 @@ def store_baseline(country_id, country_name, identity_layer, analysis, version_n
         print(f"  [X] baseline_versions insert failed: {e}")
         return None
 
-    # ── 2. score_history ────────────────────────────────────────────────────
+    # -- 2. score_history ----------------------------------------------------
     try:
         history_row = {
             "country_id":           country_id,
@@ -484,9 +484,9 @@ def store_baseline(country_id, country_name, identity_layer, analysis, version_n
         print(f"  [OK] Stored in score_history (tier=1, total={total_score})")
     except Exception as e:
         print(f"  [X] score_history insert failed: {e}")
-        # Not fatal — baseline is stored, dashboard can still query it via view
+        # Not fatal - baseline is stored, dashboard can still query it via view
 
-    # ── 3. review_queue ─────────────────────────────────────────────────────
+    # -- 3. review_queue -----------------------------------------------------
     try:
         review_row = {
             "country_id":     country_id,
@@ -538,7 +538,7 @@ def run_country_baseline(country_name, iso_code, layers, force=False):
     base_baseline = None  # Will hold base analysis for identity layer context
 
     for layer in layers:
-        print(f"\n  ── Layer: {layer} ──")
+        print(f"\n  -- Layer: {layer} --")
 
         # Check if baseline already exists
         exists, reviewed_by, current_version = baseline_already_exists(country_id, layer)
@@ -581,7 +581,7 @@ def run_country_baseline(country_name, iso_code, layers, force=False):
         )
 
         if not analysis:
-            print(f"  [X] Analysis failed for {country_name}/{layer} — skipping")
+            print(f"  [X] Analysis failed for {country_name}/{layer} - skipping")
             continue
 
         # Store
@@ -608,10 +608,10 @@ def run_country_baseline(country_name, iso_code, layers, force=False):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Travint.ai — Tier 1 Baseline Establishment Pipeline"
+        description="Travint.ai - Tier 1 Baseline Establishment Pipeline"
     )
     parser.add_argument("--country",       type=str, help="Country name (e.g. 'France')")
-    parser.add_argument("--iso",           type=str, help="ISO code (e.g. 'FR') — alternative to --country")
+    parser.add_argument("--iso",           type=str, help="ISO code (e.g. 'FR') - alternative to --country")
     parser.add_argument("--layer",         type=str, choices=ALL_LAYERS, help="Single identity layer")
     parser.add_argument("--all-layers",    action="store_true", help="Run all identity layers")
     parser.add_argument("--all-countries", action="store_true", help="Run all countries in the system")
@@ -621,7 +621,7 @@ def main():
     args = parser.parse_args()
 
     print("=" * 60)
-    print("  Travint.ai — Tier 1 Baseline Pipeline")
+    print("  Travint.ai - Tier 1 Baseline Pipeline")
     print("=" * 60)
     print(f"  Started: {datetime.now(timezone.utc).isoformat()} UTC\n")
 
@@ -632,7 +632,7 @@ def main():
         layers = [args.layer]
     else:
         layers = ["base"]  # Default to base layer only
-        print("[!] No layer specified — defaulting to base layer only")
+        print("[!] No layer specified - defaulting to base layer only")
         print("    Use --layer solo_women or --all-layers to include identity layers\n")
 
     # Determine countries
@@ -672,12 +672,12 @@ def main():
             failed += 1
 
     print(f"\n{'='*60}")
-    print(f"  DONE — {success} countries completed, {failed} failed")
+    print(f"  DONE - {success} countries completed, {failed} failed")
     print(f"  Finished: {datetime.now(timezone.utc).isoformat()} UTC")
     print(f"{'='*60}")
     print()
-    print("  ⚠  All baselines are marked 'pending' until owner review.")
-    print("     Review in the admin panel → Review Queue.")
+    print("  [!]  All baselines are marked 'pending' until owner review.")
+    print("     Review in the admin panel - Review Queue.")
     print("     Dashboard already shows the scores.")
 
 

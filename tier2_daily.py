@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Travint.ai — Tier 2 Daily Change Detection Pipeline
+Travint.ai - Tier 2 Daily Change Detection Pipeline
 
 PURPOSE:
   Detects changes from the established Tier 1 baseline.
-  This is NOT fresh scoring — it is change detection.
+  This is NOT fresh scoring - it is change detection.
 
   The fundamental difference from the old analyze.py:
   - Starts from the baseline (not from scratch)
@@ -17,13 +17,13 @@ PURPOSE:
 HOW IT WORKS:
   1. Load country baseline from baseline_versions
   2. Load recent headlines from ingest.py output
-  3. Ask Gemini: what has CHANGED since the baseline? (quote required)
+  3. Ask Gemini: what has CHANGED since the baseline- (quote required)
   4. For each category:
-     - No change → keep baseline score, log to score_history
-     - Change detected with quote → store to change_events, update score_history
-     - Large jump (>1 level) or RED/PURPLE → also add to review_queue
-     - Sub-threshold signal (no change but concerning) → increment trend_signals counter
-  5. If trend_signals threshold hit → flag for review_queue
+     - No change - keep baseline score, log to score_history
+     - Change detected with quote - store to change_events, update score_history
+     - Large jump (>1 level) or RED/PURPLE - also add to review_queue
+     - Sub-threshold signal (no change but concerning) - increment trend_signals counter
+  5. If trend_signals threshold hit - flag for review_queue
 
 WHEN TO RUN:
   Every 12 hours (Tier 2 analysis cycle).
@@ -276,7 +276,7 @@ def increment_trend_signal(country_id, identity_layer):
     }
     if flagged and not signal.get("flagged"):
         update["flagged_at"] = datetime.now(timezone.utc).isoformat()
-        print(f"  [!] TREND THRESHOLD REACHED ({new_count} signals) — flagging for review")
+        print(f"  [!] TREND THRESHOLD REACHED ({new_count} signals) - flagging for review")
 
     try:
         supabase.table("trend_signals").update(update).eq("id", signal["id"]).execute()
@@ -332,57 +332,57 @@ Today: {today}
 Country: {country_name}
 Audience: {layer_desc}
 
-━━━ YOUR TASK ━━━
+--- YOUR TASK ---
 
 You are NOT scoring this country from scratch. You are checking whether RECENT EVENTS
 have changed any threat category from its established baseline.
 
 Scores change ONLY when you have specific, dated evidence from the headlines provided.
-If you cannot quote a headline that justifies a change — the score stays the same.
+If you cannot quote a headline that justifies a change - the score stays the same.
 This is mandatory. No quote = no change.
 
-━━━ ESTABLISHED BASELINE (Tier 1 — structural conditions) ━━━
+--- ESTABLISHED BASELINE (Tier 1 - structural conditions) ---
 
 {baseline_scores_text}
 
 Baseline established: {baseline.get('created_at', 'unknown')[:10]}
 
-━━━ CURRENT SCORES (most recent Tier 2 update) ━━━
+--- CURRENT SCORES (most recent Tier 2 update) ---
 
 {current_scores_text}
 
-━━━ RECENT HEADLINES (from latest ingestion) ━━━
+--- RECENT HEADLINES (from latest ingestion) ---
 
 {headlines_text if headlines else "  [No relevant headlines found for this country]"}
 
-━━━ NSC LEVEL ━━━
+--- NSC LEVEL ---
 {"Israeli NSC Level: " + str(nsc_level) + "/4" if nsc_level else "N/A"}
 
-━━━ CHANGE DETECTION RULES ━━━
+--- CHANGE DETECTION RULES ---
 
 For EACH of the 7 categories, determine:
 
 1. SCORE UP (threat increased): Headlines show a NEW threat development ABOVE current level.
-   → Required: verbatim quote from a headline, source name, and approximate date
-   → Change type: "EVENT" (single incident, temporary) or "TREND" (pattern building)
-   → EVENT scores auto-expire after 30 days with no confirming events
+   - Required: verbatim quote from a headline, source name, and approximate date
+   - Change type: "EVENT" (single incident, temporary) or "TREND" (pattern building)
+   - EVENT scores auto-expire after 30 days with no confirming events
 
 2. SCORE DOWN (threat decreased, positive development): Headlines show genuine improvement.
-   → Required: verbatim quote confirming resolution/improvement
-   → Change type: "POSITIVE"
-   → Do not return to baseline automatically — verify through 2+ cycles first
+   - Required: verbatim quote confirming resolution/improvement
+   - Change type: "POSITIVE"
+   - Do not return to baseline automatically - verify through 2+ cycles first
 
 3. NO CHANGE: Headlines do not provide specific evidence for a score change.
-   → Keep current score. Do not change because of vague or unrelated news.
+   - Keep current score. Do not change because of vague or unrelated news.
 
 4. SUB-THRESHOLD SIGNAL: Something concerning but not enough to change the score yet.
-   → Mark as sub_threshold_signal: true. Count accumulates over time.
-   → When 5 consecutive signals hit, the system flags for human review.
+   - Mark as sub_threshold_signal: true. Count accumulates over time.
+   - When 5 consecutive signals hit, the system flags for human review.
 
-━━━ SCORING SCALE ━━━
+--- SCORING SCALE ---
 GREEN (1) / YELLOW (2) / ORANGE (3) / RED (4) / PURPLE (5)
 
-━━━ REQUIRED OUTPUT FORMAT ━━━
+--- REQUIRED OUTPUT FORMAT ---
 
 Return ONLY valid JSON.
 
@@ -392,9 +392,9 @@ Return ONLY valid JSON.
       "current_score":  "GREEN|YELLOW|ORANGE|RED|PURPLE",
       "changed":        true|false,
       "change_type":    null | "EVENT" | "TREND" | "POSITIVE" | "SPILLOVER",
-      "source_quote":   "verbatim quote from headline — REQUIRED if changed=true, else null",
-      "source_name":    "publication name — REQUIRED if changed=true, else null",
-      "source_date":    "YYYY-MM-DD approximate — REQUIRED if changed=true, else null",
+      "source_quote":   "verbatim quote from headline - REQUIRED if changed=true, else null",
+      "source_name":    "publication name - REQUIRED if changed=true, else null",
+      "source_date":    "YYYY-MM-DD approximate - REQUIRED if changed=true, else null",
       "event_elevated": true|false,
       "event_expiry":   "YYYY-MM-DD (30 days from today if event_elevated=true, else null)",
       "sub_threshold_signal": true|false,
@@ -407,7 +407,7 @@ Return ONLY valid JSON.
     "health":               {{ ... }},
     "infrastructure":       {{ ... }}
   }},
-  "summary": "2-3 short paragraphs. What changed and why. What didn't change and why. Write like briefing a colleague — specific, no AI filler phrases.",
+  "summary": "2-3 short paragraphs. What changed and why. What didn't change and why. Write like briefing a colleague - specific, no AI filler phrases.",
   "watch_factors": "2-3 specific upcoming developments to monitor. Dates/timeframes where known.",
   "recommendations": {{
     "movement_access":        "one sentence",
@@ -423,7 +423,7 @@ Return ONLY valid JSON.
 QUALITY RULES:
 - If there are no relevant headlines, confirm all scores unchanged with "No relevant events detected in current ingestion cycle" in reasoning
 - Never hallucinate events not present in the headlines
-- Sub-threshold signals are for things that feel concerning but lack specific enough evidence — use sparingly
+- Sub-threshold signals are for things that feel concerning but lack specific enough evidence - use sparingly
 - Be honest about uncertainty: "Unclear from available sources" is a valid reasoning
 """
 
@@ -437,7 +437,7 @@ QUALITY RULES:
 def store_tier2_result(country_id, country_name, identity_layer, baseline, analysis):
     """
     Store Tier 2 change detection result:
-    1. score_history (always — every run creates a new record)
+    1. score_history (always - every run creates a new record)
     2. change_events (only for changed categories)
     3. review_queue (if large jump or RED/PURPLE change)
     4. trend_signals (increment if sub-threshold signals detected)
@@ -448,7 +448,7 @@ def store_tier2_result(country_id, country_name, identity_layer, baseline, analy
     total_score  = calculate_total_score(new_scores)
     now          = datetime.now(timezone.utc).isoformat()
 
-    # ── 1. score_history ────────────────────────────────────────────────────
+    # -- 1. score_history ----------------------------------------------------
     history_id = None
     try:
         history_row = {
@@ -473,7 +473,7 @@ def store_tier2_result(country_id, country_name, identity_layer, baseline, analy
         print(f"  [X] score_history insert failed: {e}")
         return None
 
-    # ── 2. change_events ────────────────────────────────────────────────────
+    # -- 2. change_events ----------------------------------------------------
     changes_detected = []
     for cat, cat_data in categories.items():
         if not cat_data.get("changed"):
@@ -485,7 +485,7 @@ def store_tier2_result(country_id, country_name, identity_layer, baseline, analy
         delta      = score_delta(old_score, new_score)
 
         if not quote:
-            print(f"  [!] {cat}: changed=true but no source_quote — treating as no change")
+            print(f"  [!] {cat}: changed=true but no source_quote - treating as no change")
             continue
 
         changes_detected.append((cat, old_score, new_score, delta, cat_data))
@@ -512,8 +512,8 @@ def store_tier2_result(country_id, country_name, identity_layer, baseline, analy
                 "created_at":      now,
             }
             supabase.table("change_events").insert(event_row).execute()
-            direction = "▲" if delta > 0 else "▼"
-            print(f"  [OK] change_event: {cat} {old_score} → {new_score} {direction} ({cat_data.get('change_type')})")
+            direction = "-" if delta > 0 else "-"
+            print(f"  [OK] change_event: {cat} {old_score} - {new_score} {direction} ({cat_data.get('change_type')})")
         except Exception as e:
             print(f"  [!] change_events insert failed for {cat}: {e}")
 
@@ -521,7 +521,7 @@ def store_tier2_result(country_id, country_name, identity_layer, baseline, analy
         if delta != 0:
             reset_trend_signal(country_id, identity_layer)
 
-    # ── 3. review_queue (large jumps or RED/PURPLE) ──────────────────────────
+    # -- 3. review_queue (large jumps or RED/PURPLE) --------------------------
     urgent_changes = [
         (cat, old, new, delta, data)
         for cat, old, new, delta, data in changes_detected
@@ -557,17 +557,17 @@ def store_tier2_result(country_id, country_name, identity_layer, baseline, analy
                 "created_at":     now,
             }
             supabase.table("review_queue").insert(review_row).execute()
-            print(f"  [!] Added to review_queue (priority={priority}) — {len(urgent_changes)} large/critical change(s)")
+            print(f"  [!] Added to review_queue (priority={priority}) - {len(urgent_changes)} large/critical change(s)")
         except Exception as e:
             print(f"  [!] review_queue insert failed: {e}")
 
-    # ── 4. trend_signals ────────────────────────────────────────────────────
+    # -- 4. trend_signals ----------------------------------------------------
     sub_threshold = [cat for cat, data in categories.items() if data.get("sub_threshold_signal")]
     if sub_threshold:
         print(f"  [>] Sub-threshold signals detected in: {', '.join(sub_threshold)}")
         increment_trend_signal(country_id, identity_layer)
     else:
-        # Check if trend signal already flagged — if so, still in review queue, do nothing
+        # Check if trend signal already flagged - if so, still in review queue, do nothing
         pass
 
     return history_id
@@ -594,9 +594,9 @@ def run_country_daily(country_name, iso_code, layers):
     nsc_data = load_nsc_warnings() if "jewish_israeli" in layers else {}
 
     for layer in layers:
-        print(f"\n  ── Layer: {layer} ──")
+        print(f"\n  -- Layer: {layer} --")
 
-        # Load baseline — required for Tier 2
+        # Load baseline - required for Tier 2
         baseline = get_active_baseline(country_id, layer)
         if not baseline:
             print(f"  [SKIP] No baseline found for {country_name}/{layer}")
@@ -605,7 +605,7 @@ def run_country_daily(country_name, iso_code, layers):
 
         approved = baseline.get("reviewed_by", "pending")
         if approved == "pending":
-            print(f"  [!] Baseline is pending owner review — running anyway (scores visible on dashboard)")
+            print(f"  [!] Baseline is pending owner review - running anyway (scores visible on dashboard)")
 
         # Load current scores (most recent score_history entry)
         current = get_latest_score(country_id, layer)
@@ -657,7 +657,7 @@ def run_country_daily(country_name, iso_code, layers):
         if changed_cats:
             print(f"  [!] CHANGES DETECTED: {', '.join(changed_cats)}")
         else:
-            print(f"  [-] No score changes — baseline confirmed")
+            print(f"  [-] No score changes - baseline confirmed")
 
     return True
 
@@ -668,7 +668,7 @@ def run_country_daily(country_name, iso_code, layers):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Travint.ai — Tier 2 Daily Change Detection"
+        description="Travint.ai - Tier 2 Daily Change Detection"
     )
     parser.add_argument("--country",    type=str, help="Country name")
     parser.add_argument("--iso",        type=str, help="ISO code (e.g. FR)")
@@ -679,7 +679,7 @@ def main():
     args = parser.parse_args()
 
     print("=" * 60)
-    print("  Travint.ai — Tier 2 Daily Change Detection")
+    print("  Travint.ai - Tier 2 Daily Change Detection")
     print("=" * 60)
     print(f"  Started: {datetime.now(timezone.utc).isoformat()} UTC\n")
 
@@ -732,7 +732,7 @@ def main():
                 failed += 1
 
     print(f"\n{'='*60}")
-    print(f"  DONE — {success} countries completed, {failed} failed")
+    print(f"  DONE - {success} countries completed, {failed} failed")
     print(f"  Finished: {datetime.now(timezone.utc).isoformat()} UTC")
     print(f"{'='*60}\n")
 
