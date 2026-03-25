@@ -23,15 +23,15 @@ from supabase import create_client, Client
 # Load environment variables
 load_dotenv()
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+SUPABASE_URL         = os.getenv("SUPABASE_URL")
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 
-if not SUPABASE_URL or not SUPABASE_KEY:
-    print("ERROR: Missing SUPABASE_URL or SUPABASE_KEY in .env file")
+if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+    print("ERROR: Missing SUPABASE_URL or SUPABASE_SERVICE_KEY in .env file")
     sys.exit(1)
 
-# Initialize Supabase client
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+# Pipeline uses service key — it has write access
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 
 def load_sources_config():

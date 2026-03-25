@@ -162,15 +162,15 @@ Then on next line, briefly explain (1-2 sentences).
 
 
 def run_full_analysis():
-    """Execute analyze.py to run full Gemini 2.5 Pro analysis."""
-    
+    """Execute tier2_daily.py to run Tier 2 change detection."""
+
     print("\n" + "="*60)
-    print("[!!] TRIGGERING FULL ANALYSIS")
+    print("[!!] TRIGGERING TIER 2 CHANGE DETECTION")
     print("="*60 + "\n")
-    
+
     try:
         result = subprocess.run(
-            ["python", "analyze.py"],
+            ["python", "tier2_daily.py"],
             capture_output=True,
             text=True,
             timeout=300  # 5 min timeout
