@@ -1,6 +1,8 @@
-.env 
-__pycache__/ 
-*.pyc 
-latest_headlines.json 
-previous_headlines.json 
-last_analysis.txt 
+.env
+__pycache__/
+*.pyc
+latest_headlines.json
+previous_headlines.json
+last_analysis.txt
+.claude/settings.local.json
+*.zip
