@@ -250,6 +250,24 @@ What a Tier 1 baseline is NOT:
 - A summary of current events
 - Something that changes every few months (that's Tier 2's job)
 
+CRITICAL — USE YOUR GOOGLE SEARCH ACCESS:
+Search for current conditions in {country_name} RIGHT NOW. Your training data may be
+1-2 years out of date. A war, a coup, or a major attack that happened 6 months ago
+is now a STRUCTURAL REALITY and must be reflected in the baseline.
+
+Specifically search for:
+- "{country_name} security situation {today[:4]}"
+- "{country_name} travel advisory {today[:4]}"
+- "{country_name} terrorism attack {today[:4]}"
+- Any active armed conflicts or wars involving {country_name}
+- Any significant incidents in the past 24 months that permanently changed conditions
+
+MAJOR INCIDENTS RULE: If a significant attack, conflict, or security event occurred
+in the past 24 months that changed the structural threat picture, it MUST be reflected
+in the scores — even if it looks like a "current event". A country where a major
+terror attack killed 6 people last year has a different structural terrorism score
+than a country where none occurred. Do not undercount recent history.
+
 === SCORING SCALE ===
 
 GREEN  (1): Safe / Normal structural conditions
@@ -388,40 +406,254 @@ QUALITY RULES:
 
 def run_baseline_analysis(country_name, identity_layer, nsc_level=None, base_baseline=None):
     """
-    Run Gemini analysis to establish the Tier 1 structural baseline.
+    TWO-STEP ANALYSIS (as required by CLAUDE.md — scoring and narrative are separate calls):
+
+    Step 1 — Intelligence Briefing (WITH Google Search Grounding):
+      Gemini searches the web in real time and produces a factual prose briefing
+      of current conditions. This is the ground truth that everything else builds on.
+      Search grounding is critical — without it Gemini uses training data that may
+      be 1-2+ years out of date.
+
+    Step 2 — Scoring (WITHOUT search, pure JSON):
+      A second Gemini call reads the Step 1 briefing and produces clean JSON scores.
+      No search tool = no citation markers = clean parseable JSON every time.
+      This separation is also per CLAUDE.md: "Scoring and summary are separate LLM calls."
+
     Returns parsed analysis dict or None on failure.
     """
-    print(f"  [>] Calling Gemini 2.5 Flash for {country_name} / {identity_layer}...")
+    today = datetime.now(timezone.utc).strftime("%B %d, %Y")
 
-    prompt = build_baseline_prompt(country_name, identity_layer, nsc_level, base_baseline)
+    layer_descriptions = {
+        "base":           "general international travelers",
+        "jewish_israeli": "Jewish and Israeli travelers",
+        "solo_women":     "solo women travelers",
+    }
+    layer_desc = layer_descriptions.get(identity_layer, "general travelers")
+
+    # ── STEP 1: Real-time Intelligence Briefing (with Google Search) ──────────
+    print(f"  [>] Step 1 — Searching current conditions for {country_name} ({identity_layer})...")
+
+    identity_context = ""
+    if identity_layer == "jewish_israeli":
+        identity_context = """
+Focus on conditions specifically for Jewish and Israeli travelers:
+- Is the Israeli passport valid here? (Iran, Saudi, Lebanon, Syria, Libya, Yemen, Iraq, Pakistan ban it)
+- Recent antisemitic incidents, attacks, or institutional hostility toward Jews/Israelis
+- Israeli embassy/consulate status and functional consular protection
+- Local Jewish community safety
+- NSC warning level and any Israeli government travel advisories"""
+        if nsc_level:
+            identity_context += f"\n- Israeli NSC current level: {nsc_level}/4"
+    elif identity_layer == "solo_women":
+        identity_context = """
+Focus on conditions specifically for solo women travelers:
+- Legal rights and restrictions for women traveling alone (guardianship laws, dress codes)
+- Rates of gender-based violence and sexual assault
+- Safety of public transport and taxis for women
+- Recent incidents targeting women
+- Quality of healthcare for women"""
+
+    briefing_prompt = f"""You are a senior travel security analyst. Today is {today}.
+
+Search for the CURRENT security situation in {country_name} for {layer_desc}.
+
+Search for:
+- "{country_name} security situation {today[:4]}"
+- "{country_name} travel advisory {today[:4]}"
+- "{country_name} armed conflict war {today[:4]}"
+- "{country_name} terrorism attack {today[:4]}"
+- Any active wars, conflicts, or major incidents in the past 24 months
+{identity_context}
+
+Write a factual intelligence briefing covering:
+1. ARMED CONFLICT: Any active wars, military operations, airstrikes, territorial conflicts?
+2. REGIONAL INSTABILITY: Neighboring conflicts with spillover? Geopolitical tensions?
+3. TERRORISM: Active groups, recent attacks, threat level?
+4. CIVIL STRIFE: Political violence, coups, riots, sustained protests?
+5. CRIME: Organized crime, kidnapping, violent crime rates for travelers?
+6. HEALTH: Disease outbreaks, healthcare quality, medical access?
+7. INFRASTRUCTURE: Road safety, power/water reliability, transport quality?
+
+Be specific: name actual groups, cite specific incidents with dates, give statistics where known.
+If there is an active war or major conflict, describe it clearly — do not soften it.
+This briefing will be used to assign threat scores. Accuracy is critical."""
 
     try:
-        response = gemini.models.generate_content(
+        step1_response = gemini.models.generate_content(
             model="gemini-2.5-flash",
-            contents=prompt,
-            config={"temperature": 0.0, "top_p": 0.95}
+            contents=briefing_prompt,
+            config=genai.types.GenerateContentConfig(
+                tools=[genai.types.Tool(google_search=genai.types.GoogleSearch())],
+                temperature=0.0,
+            )
+        )
+        briefing = step1_response.text.strip()
+        print(f"  [OK] Briefing complete ({len(briefing)} chars)")
+
+    except Exception as e:
+        print(f"  [X] Step 1 briefing failed: {e}")
+        return None
+
+    # ── STEP 2: Scoring from Briefing (no search, pure JSON) ──────────────────
+    print(f"  [>] Step 2 — Scoring from briefing...")
+
+    full_prompt = build_baseline_prompt(country_name, identity_layer, nsc_level, base_baseline)
+
+    scoring_prompt = f"""You are a travel security analyst. Score the following country based on the intelligence briefing below.
+
+INTELLIGENCE BRIEFING (sourced from current web search, {today}):
+{briefing}
+
+{f"BASE LAYER CONTEXT: {json.dumps(base_baseline.get('scores', {}))}" if base_baseline else ""}
+
+SCORING SCALE AND DEFINITIONS:
+
+ARMED CONFLICT — Score based on conflict ON THE COUNTRY'S TERRITORY or directly threatening it.
+  GREEN:  No armed conflict. Country is not at war.
+  YELLOW: Localized or low-level conflict in remote border areas. Does not affect travelers.
+  ORANGE: Active conflict in parts of the country. Traveler movement restricted in conflict zones.
+  RED:    Widespread active conflict. Multiple regions unsafe. Capital or major cities threatened.
+  PURPLE: Full-scale war. Active fighting in/near major cities. Do not travel.
+  NOTE: If a country's military is deployed ABROAD in an overseas conflict but there is no
+  fighting on home soil, this does NOT raise the armed_conflict score above YELLOW at most.
+
+REGIONAL INSTABILITY — Score based on how much neighboring/regional conflicts affect THIS country.
+  GREEN:  Stable neighborhood. No meaningful spillover risk.
+  YELLOW: Some regional tensions. Low direct spillover risk.
+  ORANGE: Active regional conflict with documented spillover (refugees, cross-border incidents).
+  RED:    Direct threat from regional conflict. Missile/attack risk. Borders under pressure.
+  PURPLE: Country is a direct participant or frontline state in a regional war.
+
+TERRORISM — Score based on active terrorist threat to travelers.
+  GREEN:  No credible threat. No significant incidents in 5+ years.
+  YELLOW: Low-level threat. Occasional incidents but no sustained campaign.
+  ORANGE: Elevated threat. Active groups, multiple incidents in past 2 years.
+  RED:    High threat. Recent mass-casualty attacks (multiple deaths). Active ongoing campaign.
+  PURPLE: Extreme threat. Systematic targeting. Foreign travelers specifically targeted.
+
+CIVIL STRIFE — Score based on political violence affecting travelers.
+  GREEN:  Stable. Protests are peaceful and rare.
+  YELLOW: Occasional protests. No significant violence. Travelers easily avoid.
+  ORANGE: Sustained protests with violence. Some parts of cities unsafe. Travel precautions needed.
+  RED:    Widespread unrest. Riots, political violence. Significant parts of country unstable.
+  PURPLE: Coup, civil war, or collapse of public order. Do not travel.
+
+CRIME — Score based on crime rates affecting travelers specifically.
+  GREEN:  Low crime. Safe for travelers with normal precautions.
+  YELLOW: Moderate crime. Petty theft, pickpocketing. Standard urban precautions.
+  ORANGE: Elevated crime. Robbery, assault, vehicle theft. Avoid certain areas. Vary precautions.
+  RED:    High crime. Kidnapping risk. Violent crime affecting travelers. Significant precautions.
+  PURPLE: Extreme crime. Systematic targeting of foreigners. Criminal no-go zones.
+
+HEALTH — Score based on disease risk and healthcare access for travelers.
+  GREEN:  Good healthcare. Standard vaccinations sufficient. No significant disease risk.
+  YELLOW: Adequate healthcare in cities. Some rural limitations. Minor disease considerations.
+  ORANGE: Limited healthcare outside major cities. Some disease risk (malaria, dengue, etc.).
+  RED:    Poor healthcare infrastructure. Active disease outbreaks. Medical evacuation likely needed.
+  PURPLE: Healthcare system collapsed. Epidemic/pandemic conditions. Extreme medical risk.
+
+INFRASTRUCTURE — Score based on travel infrastructure quality and safety.
+  GREEN:  Modern infrastructure. Safe roads, reliable transport, good utilities.
+  YELLOW: Generally good but some gaps. Rural roads less safe. Minor transport issues.
+  ORANGE: Unreliable infrastructure in parts. Road safety concerns. Power/water interruptions.
+  RED:    Poor infrastructure. Dangerous roads. Unreliable utilities. Significant disruption risk.
+  PURPLE: Infrastructure collapsed. No reliable transport, power, water, or communications.
+
+CALIBRATION EXAMPLES:
+  Australia: Generally GREEN/YELLOW on most categories. Even with the December 2025
+  Bondi attack, terrorism is ORANGE-RED (not PURPLE). Armed conflict is YELLOW at most
+  (overseas deployment, no fighting on home soil).
+  Israel (March 2026): PURPLE armed_conflict, PURPLE regional_instability (active war on
+  multiple fronts, Iran missiles, direct threat to entire country).
+  France: YELLOW overall. ORANGE terrorism (historical attacks, active threat). GREEN armed_conflict.
+
+VETO RULE: If any of armed_conflict, regional_instability, terrorism, or civil_strife
+is RED or PURPLE, the total_score must be at least that level.
+
+Return ONLY this JSON (no markdown, no extra text):
+{{
+  "scores": {{
+    "armed_conflict":       "GREEN|YELLOW|ORANGE|RED|PURPLE",
+    "regional_instability": "GREEN|YELLOW|ORANGE|RED|PURPLE",
+    "terrorism":            "GREEN|YELLOW|ORANGE|RED|PURPLE",
+    "civil_strife":         "GREEN|YELLOW|ORANGE|RED|PURPLE",
+    "crime":                "GREEN|YELLOW|ORANGE|RED|PURPLE",
+    "health":               "GREEN|YELLOW|ORANGE|RED|PURPLE",
+    "infrastructure":       "GREEN|YELLOW|ORANGE|RED|PURPLE"
+  }},
+  "stability_justifications": {{
+    "armed_conflict":       "Why this score. What specific evidence from the briefing. What would change it.",
+    "regional_instability": "...",
+    "terrorism":            "...",
+    "civil_strife":         "...",
+    "crime":                "...",
+    "health":               "...",
+    "infrastructure":       "..."
+  }},
+  "confidence_levels": {{
+    "armed_conflict":       "HIGH|MEDIUM|LOW|INSUFFICIENT",
+    "regional_instability": "HIGH|MEDIUM|LOW|INSUFFICIENT",
+    "terrorism":            "HIGH|MEDIUM|LOW|INSUFFICIENT",
+    "civil_strife":         "HIGH|MEDIUM|LOW|INSUFFICIENT",
+    "crime":                "HIGH|MEDIUM|LOW|INSUFFICIENT",
+    "health":               "HIGH|MEDIUM|LOW|INSUFFICIENT",
+    "infrastructure":       "HIGH|MEDIUM|LOW|INSUFFICIENT"
+  }},
+  "baseline_narrative": "3-4 paragraphs. Specific, direct. No AI filler. Based strictly on the briefing above.",
+  "veto_explanation": "Explain the total score calculation — which categories triggered veto (if any), or weighted average result.",
+  "sources_used": ["List specific sources and incidents from the briefing. Be concrete."],
+  "recommendations": {{
+    "movement_access":        "one concrete sentence",
+    "emergency_preparedness": "one concrete sentence",
+    "communications":         "one concrete sentence",
+    "health_medical":         "one concrete sentence",
+    "crime_personal_safety":  "one concrete sentence",
+    "travel_logistics":       "one concrete sentence"
+  }},
+  "watch_factors": "2-4 specific developments to monitor with dates/timeframes where known."
+}}"""
+
+    try:
+        step2_response = gemini.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=scoring_prompt,
+            config=genai.types.GenerateContentConfig(
+                temperature=0.0,
+                # No search tool here — keeps output clean JSON
+            )
         )
 
-        text = response.text.strip()
+        text = step2_response.text.strip()
 
-        # Strip markdown code fences if present
-        if text.startswith("```json"):
-            text = text[7:]
-        if text.startswith("```"):
-            text = text[3:]
-        if text.endswith("```"):
-            text = text[:-3]
+        # Strip markdown fences
+        if text.startswith("```json"): text = text[7:]
+        if text.startswith("```"):     text = text[3:]
+        if text.endswith("```"):       text = text[:-3]
         text = text.strip()
 
+        # Extract JSON block (find outermost { })
+        start = text.find("{")
+        end   = text.rfind("}") + 1
+        if start >= 0 and end > start:
+            text = text[start:end]
+
+        # Clean common Gemini JSON issues: trailing commas before } or ]
+        import re
+        text = re.sub(r",\s*([}\]])", r"\1", text)
+
         analysis = json.loads(text)
-        print(f"  [OK] Analysis complete")
+
+        # Attach the briefing so it can be stored for audit
+        analysis["_briefing"] = briefing
+        print(f"  [OK] Scoring complete")
         return analysis
 
     except json.JSONDecodeError as e:
         print(f"  [X] JSON parse failed: {e}")
+        print(f"  Raw (first 300): {text[:300]}")
         return None
     except Exception as e:
-        print(f"  [X] Gemini call failed: {e}")
+        print(f"  [X] Step 2 scoring failed: {e}")
         return None
 
 

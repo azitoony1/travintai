@@ -623,12 +623,17 @@ def run_country_daily(country_name, iso_code, layers):
             nsc_level      = nsc_level,
         )
 
-        print(f"  [>] Calling Gemini 2.5 Flash...")
+        print(f"  [>] Calling Gemini 2.5 Flash (+ Google Search)...")
         try:
+            # Google Search Grounding: gives Gemini live web access to verify and
+            # supplement the ingested headlines with current information.
             response = gemini.models.generate_content(
                 model="gemini-2.5-flash",
                 contents=prompt,
-                config={"temperature": 0.0, "top_p": 0.95}
+                config=genai.types.GenerateContentConfig(
+                    tools=[genai.types.Tool(google_search=genai.types.GoogleSearch())],
+                    temperature=0.0,
+                )
             )
             text = response.text.strip()
 

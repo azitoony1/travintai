@@ -50,26 +50,81 @@ def load_israeli_nsc_warnings():
         return None
 
 
-def fetch_rss(url):
-    """Fetch and parse an RSS feed."""
+def fetch_full_article_text(url, timeout=8):
+    """
+    Fetch and extract readable text from a single article URL.
+    Called for each RSS entry to get full content, not just the title.
+    Returns extracted text (up to 3000 chars) or empty string on failure.
+    """
+    try:
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+        response = requests.get(url, headers=headers, timeout=timeout)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.content, "lxml")
+
+        # Remove noise elements
+        for tag in soup(["script", "style", "nav", "footer", "header", "aside",
+                          "form", "button", "iframe", "noscript"]):
+            tag.decompose()
+
+        # Try article-specific selectors first (most news sites use these)
+        article_body = (
+            soup.find("article") or
+            soup.find(class_=lambda c: c and any(x in c.lower() for x in ["article-body", "story-body", "post-content", "entry-content", "article-content"])) or
+            soup.find("main") or
+            soup.find("body")
+        )
+
+        if article_body:
+            paragraphs = article_body.find_all("p")
+            text = " ".join(p.get_text(strip=True) for p in paragraphs if len(p.get_text(strip=True)) > 40)
+        else:
+            text = soup.get_text(separator=" ", strip=True)
+
+        # Limit length — enough for analysis, not so much it bloats context
+        return text[:3000].strip()
+
+    except Exception:
+        return ""
+
+
+def fetch_rss(url, fetch_articles=True):
+    """
+    Fetch and parse an RSS feed.
+    If fetch_articles=True, also fetches full text for each article.
+    Full text is the critical improvement over titles-only — it gives the AI
+    actual content to quote and reason from.
+    """
     try:
         feed = feedparser.parse(url)
         if feed.bozo:
             print(f"  [!]  RSS parse warning for {url}: {feed.bozo_exception}")
-        
-        # Extract the most recent entries (last 24 hours worth)
+
         entries = []
-        for entry in feed.entries[:20]:  # Limit to 20 most recent
+        for entry in feed.entries[:15]:  # Limit to 15 most recent
+            link    = entry.get("link", "")
+            title   = entry.get("title", "")
+            summary = entry.get("summary", "")
+
+            # Fetch full article text for richer context
+            full_text = ""
+            if fetch_articles and link:
+                full_text = fetch_full_article_text(link)
+
+            # Use full text if fetched; fall back to RSS summary
+            content = full_text if full_text else summary
+
             entries.append({
-                "title": entry.get("title", ""),
-                "link": entry.get("link", ""),
+                "title":     title,
+                "link":      link,
                 "published": entry.get("published", ""),
-                "summary": entry.get("summary", "")
+                "summary":   summary,
+                "full_text": content,  # This is what analysis uses
             })
-        
+
         return {
             "feed_title": feed.feed.get("title", ""),
-            "entries": entries,
+            "entries":    entries,
             "fetched_at": datetime.now(timezone.utc).isoformat()
         }
     except Exception as e:
@@ -182,10 +237,15 @@ def ingest_global_sources(config):
         data = fetch_source(source)
         store_source_data(source["name"], source["url"], None, data)
         
-        # Extract headlines from RSS data
+        # Extract headlines + article text from RSS data
         if data and "entries" in data:
             for entry in data["entries"][:10]:
-                headlines.append(entry.get("title", ""))
+                title = entry.get("title", "")
+                text  = entry.get("full_text", "") or entry.get("summary", "")
+                item  = f"{title}"
+                if text:
+                    item += f" | {text[:300]}"
+                headlines.append(item)
     
     # Global news sources (BBC, Le Monde, Reuters)
     print("\n━━━ GLOBAL NEWS ━━━")
@@ -195,8 +255,13 @@ def ingest_global_sources(config):
         store_source_data(source["name"], source["url"], None, data)
         
         if data and "entries" in data:
-            for entry in data["entries"][:15]:  # More headlines from news
-                headlines.append(entry.get("title", ""))
+            for entry in data["entries"][:15]:
+                title = entry.get("title", "")
+                text  = entry.get("full_text", "") or entry.get("summary", "")
+                item  = f"{title}"
+                if text:
+                    item += f" | {text[:400]}"
+                headlines.append(item)
     
     print("\n━━━ GLOBAL IDENTITY SOURCES ━━━")
     identity_sources = config.get("global_identity", {})
