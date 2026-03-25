@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-TravelGuard — Smart Analysis Trigger
+Travint.ai — Smart Analysis Trigger
 
 Workflow:
 1. Read headlines from latest ingestion (saved by ingest.py)
@@ -197,7 +197,7 @@ def main():
     """Main trigger logic."""
     
     print("============================================")
-    print("   TravelGuard — Smart Trigger          =")
+    print("   Travint.ai — Smart Trigger           =")
     print("============================================")
     print(f"\nStarted: {datetime.now(timezone.utc).isoformat()} UTC\n")
     

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-TravelGuard — Data Ingestion Script
+Travint.ai — Data Ingestion Script
 
 Polls all configured data sources (RSS feeds, APIs, scraped pages) and stores
 the raw content in Supabase for later analysis.
@@ -267,7 +267,7 @@ def ingest_country_sources(config, country_name, country_code):
 def main():
     """Main ingestion routine."""
     print("============================================")
-    print("   TravelGuard — Data Ingestion         =")
+    print("   Travint.ai — Data Ingestion          =")
     print("============================================")
     print(f"\nStarted: {datetime.now(timezone.utc).isoformat()} UTC")
     

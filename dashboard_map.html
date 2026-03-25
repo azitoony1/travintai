@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travint.ai — Threat Intelligence Map</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg: #0a0e14;
+            --surface: #131920;
+            --surface-elevated: #1a2129;
+            --border: #232b36;
+            --text: #e6edf3;
+            --text-dim: #8b949e;
+            --text-muted: #6e7681;
+            
+            --green: #3fb950;
+            --green-glow: rgba(63, 185, 80, 0.3);
+            --yellow: #d29922;
+            --yellow-glow: rgba(210, 153, 34, 0.3);
+            --orange: #f97316;
+            --orange-glow: rgba(249, 115, 22, 0.3);
+            --red: #f85149;
+            --red-glow: rgba(248, 81, 73, 0.3);
+            --purple: #a371f7;
+            --purple-glow: rgba(163, 113, 247, 0.3);
+            
+            --accent: #58a6ff;
+        }
+        
+        body {
+            font-family: 'IBM Plex Sans', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        
+        /* Animated grid background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(var(--border) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border) 1px, transparent 1px);
+            background-size: 50px 50px;
+            opacity: 0.3;
+            z-index: -1;
+            animation: gridMove 20s linear infinite;
+        }
+        
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+        
+        /* Header */
+        header {
+            padding: 24px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        h1 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        
+        .identity-toggle {
+            display: inline-flex;
+            background: var(--surface-elevated);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 4px;
+        }
+        
+        .toggle-option {
+            font-family: 'JetBrains Mono', monospace;
+            padding: 10px 20px;
+            font-size: 12px;
+            font-weight: 500;
+            border: none;
+            background: transparent;
+            color: var(--text-dim);
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+        
+        .toggle-option:hover {
+            color: var(--text);
+        }
+        
+        .toggle-option.active {
+            background: var(--accent);
+            color: var(--bg);
+        }
+        
+        /* Map Container */
+        .map-container {
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 0 24px;
+        }
+        
+        .map-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-dim);
+            margin-bottom: 24px;
+        }
+        
+        /* SVG Map */
+        #map-svg {
+            width: 100%;
+            height: auto;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 40px;
+        }
+        
+        .country {
+            fill: var(--surface-elevated);
+            stroke: var(--border);
+            stroke-width: 1;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .country:hover {
+            stroke: var(--accent);
+            stroke-width: 2;
+        }
+        
+        .country.analyzed {
+            cursor: pointer;
+        }
+        
+        .country.analyzed:hover {
+            filter: brightness(1.3);
+        }
+        
+        /* Threat level colors */
+        .country.green { fill: var(--green); }
+        .country.yellow { fill: var(--yellow); }
+        .country.orange { fill: var(--orange); }
+        .country.red { fill: var(--red); }
+        .country.purple { fill: var(--purple); }
+        
+        /* Legend */
+        .legend {
+            margin-top: 32px;
+            padding: 24px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+        
+        .legend-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-dim);
+            margin-bottom: 16px;
+        }
+        
+        .legend-items {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .legend-color {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+        }
+        
+        .legend-label {
+            font-size: 13px;
+            color: var(--text);
+        }
+        
+        /* Detail View (hidden by default) */
+        .detail-view {
+            display: none;
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 0 24px;
+        }
+        
+        .detail-view.active {
+            display: block;
+        }
+        
+        .back-button {
+            font-family: 'JetBrains Mono', monospace;
+            padding: 12px 24px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            cursor: pointer;
+            font-size: 13px;
+            margin-bottom: 24px;
+            transition: all 0.3s ease;
+        }
+        
+        .back-button:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        
+        .country-detail-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 32px;
+        }
+        
+        .detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .country-name {
+            font-size: 32px;
+            font-weight: 600;
+        }
+        
+        .threat-badge-large {
+            font-family: 'JetBrains Mono', monospace;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .threat-badge-large.green {
+            background: var(--green-glow);
+            color: var(--green);
+            border: 2px solid var(--green);
+        }
+        
+        .threat-badge-large.yellow {
+            background: var(--yellow-glow);
+            color: var(--yellow);
+            border: 2px solid var(--yellow);
+        }
+        
+        .threat-badge-large.orange {
+            background: var(--orange-glow);
+            color: var(--orange);
+            border: 2px solid var(--orange);
+        }
+        
+        .threat-badge-large.red {
+            background: var(--red-glow);
+            color: var(--red);
+            border: 2px solid var(--red);
+        }
+        
+        .threat-badge-large.purple {
+            background: var(--purple-glow);
+            color: var(--purple);
+            border: 2px solid var(--purple);
+        }
+        
+        .threat-categories {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+        
+        .category-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: var(--surface-elevated);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+        
+        .category-name {
+            font-size: 14px;
+            color: var(--text-dim);
+            font-weight: 500;
+        }
+        
+        .category-level {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 4px;
+        }
+        
+        .category-level.green { background: var(--green-glow); color: var(--green); }
+        .category-level.yellow { background: var(--yellow-glow); color: var(--yellow); }
+        .category-level.orange { background: var(--orange-glow); color: var(--orange); }
+        .category-level.red { background: var(--red-glow); color: var(--red); }
+        .category-level.purple { background: var(--purple-glow); color: var(--purple); }
+        
+        .summary, .recommendations {
+            padding: 24px;
+            background: var(--surface-elevated);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+        
+        .section-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-dim);
+            margin-bottom: 16px;
+        }
+        
+        .summary-text {
+            font-size: 15px;
+            line-height: 1.8;
+            color: var(--text);
+        }
+        
+        .rec-item {
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .rec-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .rec-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 6px;
+        }
+        
+        .rec-text {
+            font-size: 14px;
+            color: var(--text-dim);
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1>TRAVELGUARD</h1>
+            <div class="identity-toggle">
+                <button class="toggle-option active" data-layer="base">General</button>
+                <button class="toggle-option" data-layer="jewish_israeli">Jewish · Israeli</button>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Map View -->
+    <div class="map-container" id="map-view">
+        <div class="map-title">Europe & Middle East / North Africa</div>
+        
+        <svg id="map-svg" viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+            <!-- Simplified map - Israel and Netherlands -->
+            <!-- Netherlands (top left) -->
+            <path class="country analyzed" data-country="Netherlands" 
+                  d="M 250 150 L 280 140 L 290 160 L 270 180 L 250 170 Z" />
+            <text x="265" y="162" fill="var(--text-dim)" font-size="10" text-anchor="middle">NL</text>
+            
+            <!-- Israel (bottom right) -->
+            <path class="country analyzed" data-country="Israel"
+                  d="M 700 500 L 710 490 L 720 500 L 720 530 L 710 540 L 700 530 Z" />
+            <text x="710" y="518" fill="var(--text-dim)" font-size="10" text-anchor="middle">IL</text>
+            
+            <!-- Other countries (not analyzed yet - gray) -->
+            <path class="country" d="M 200 200 L 240 190 L 250 220 L 220 230 Z" />
+            <text x="225" y="213" fill="var(--text-muted)" font-size="9" text-anchor="middle">BE</text>
+            
+            <path class="country" d="M 280 180 L 340 170 L 360 210 L 320 230 L 290 210 Z" />
+            <text x="320" y="203" fill="var(--text-muted)" font-size="9" text-anchor="middle">DE</text>
+            
+            <path class="country" d="M 180 250 L 260 230 L 290 280 L 220 300 Z" />
+            <text x="240" y="273" fill="var(--text-muted)" font-size="9" text-anchor="middle">FR</text>
+            
+            <path class="country" d="M 300 290 L 380 280 L 400 340 L 330 350 Z" />
+            <text x="350" y="320" fill="var(--text-muted)" font-size="9" text-anchor="middle">IT</text>
+            
+            <path class="country" d="M 380 250 L 450 240 L 470 280 L 410 290 Z" />
+            <text x="420" y="268" fill="var(--text-muted)" font-size="9" text-anchor="middle">PL</text>
+            
+            <path class="country" d="M 600 300 L 680 290 L 700 350 L 640 360 Z" />
+            <text x="650" y="328" fill="var(--text-muted)" font-size="9" text-anchor="middle">TR</text>
+            
+            <path class="country" d="M 550 450 L 630 440 L 650 500 L 580 510 Z" />
+            <text x="605" y="478" fill="var(--text-muted)" font-size="9" text-anchor="middle">EG</text>
+            
+            <path class="country" d="M 720 420 L 800 410 L 820 470 L 750 480 Z" />
+            <text x="770" y="448" fill="var(--text-muted)" font-size="9" text-anchor="middle">JO</text>
+        </svg>
+        
+        <div class="legend">
+            <div class="legend-title">Threat Levels</div>
+            <div class="legend-items">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: var(--green);"></div>
+                    <div class="legend-label">Low</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: var(--yellow);"></div>
+                    <div class="legend-label">Elevated</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: var(--orange);"></div>
+                    <div class="legend-label">Significant</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: var(--red);"></div>
+                    <div class="legend-label">High</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: var(--purple);"></div>
+                    <div class="legend-label">Critical</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: var(--surface-elevated); border: 1px solid var(--border);"></div>
+                    <div class="legend-label">Not Analyzed</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Detail View (initially hidden) -->
+    <div class="detail-view" id="detail-view">
+        <button class="back-button" onclick="showMap()">← Back to Map</button>
+        <div class="country-detail-card" id="detail-content">
+            <!-- Content loaded dynamically -->
+        </div>
+    </div>
+    
+    <script>
+        // Supabase config
+        const SUPABASE_URL = 'https://pmyklavxwqgykvyvqxao.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBteWtsYXZ4d3FneWt2eXZxeGFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwNjIwNjMsImV4cCI6MjA4NTYzODA2M30.g9E9rtOSOeGN1Yk_BGyRoLHffx4Q1FEhNpDKS4gvPCs';
+        
+        let currentLayer = 'base';
+        let scoresData = {};
+        
+        // Threat level labels
+        const THREAT_LABELS = {
+            'GREEN': 'Low',
+            'YELLOW': 'Elevated',
+            'ORANGE': 'Significant',
+            'RED': 'High',
+            'PURPLE': 'Critical'
+        };
+        
+        // Toggle identity layer
+        document.querySelectorAll('.toggle-option').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.toggle-option').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentLayer = btn.dataset.layer;
+                updateMapColors();
+                
+                // If detail view is open, refresh it
+                const detailView = document.getElementById('detail-view');
+                if (detailView.classList.contains('active')) {
+                    const currentCountry = detailView.dataset.country;
+                    showCountryDetail(currentCountry);
+                }
+            });
+        });
+        
+        // Fetch scores from Supabase
+        async function fetchScores() {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/scores?select=*,countries(name,iso_code)`, {
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                // Group by country and layer
+                scoresData = {};
+                data.forEach(score => {
+                    const country = score.countries.name;
+                    if (!scoresData[country]) scoresData[country] = {};
+                    scoresData[country][score.identity_layer] = score;
+                });
+                
+                updateMapColors();
+            } catch (error) {
+                console.error('Failed to fetch scores:', error);
+            }
+        }
+        
+        // Update map colors based on current layer
+        function updateMapColors() {
+            document.querySelectorAll('.country.analyzed').forEach(countryEl => {
+                const countryName = countryEl.dataset.country;
+                const score = scoresData[countryName]?.[currentLayer];
+                
+                if (score) {
+                    const level = score.total_score.toLowerCase();
+                    countryEl.className = `country analyzed ${level}`;
+                }
+            });
+        }
+        
+        // Show country detail
+        function showCountryDetail(countryName) {
+            const score = scoresData[countryName]?.[currentLayer];
+            if (!score) return;
+            
+            const detailView = document.getElementById('detail-view');
+            const detailContent = document.getElementById('detail-content');
+            const mapView = document.getElementById('map-view');
+            
+            detailView.dataset.country = countryName;
+            
+            const recommendations = JSON.parse(score.recommendations || '{}');
+            const level = score.total_score.toLowerCase();
+            const label = THREAT_LABELS[score.total_score];
+            
+            detailContent.innerHTML = `
+                <div class="detail-header">
+                    <div class="country-name">${countryName}</div>
+                    <div class="threat-badge-large ${level}">${label}</div>
+                </div>
+                
+                <div class="threat-categories">
+                    <div class="category-item">
+                        <span class="category-name">Armed Conflict</span>
+                        <span class="category-level ${score.armed_conflict.toLowerCase()}">${THREAT_LABELS[score.armed_conflict]}</span>
+                    </div>
+                    <div class="category-item">
+                        <span class="category-name">Regional Instability</span>
+                        <span class="category-level ${score.regional_instability.toLowerCase()}">${THREAT_LABELS[score.regional_instability]}</span>
+                    </div>
+                    <div class="category-item">
+                        <span class="category-name">Terrorism</span>
+                        <span class="category-level ${score.terrorism.toLowerCase()}">${THREAT_LABELS[score.terrorism]}</span>
+                    </div>
+                    <div class="category-item">
+                        <span class="category-name">Civil Strife</span>
+                        <span class="category-level ${score.civil_strife.toLowerCase()}">${THREAT_LABELS[score.civil_strife]}</span>
+                    </div>
+                    <div class="category-item">
+                        <span class="category-name">Crime</span>
+                        <span class="category-level ${score.crime.toLowerCase()}">${THREAT_LABELS[score.crime]}</span>
+                    </div>
+                    <div class="category-item">
+                        <span class="category-name">Health</span>
+                        <span class="category-level ${score.health.toLowerCase()}">${THREAT_LABELS[score.health]}</span>
+                    </div>
+                    <div class="category-item">
+                        <span class="category-name">Infrastructure</span>
+                        <span class="category-level ${score.infrastructure.toLowerCase()}">${THREAT_LABELS[score.infrastructure]}</span>
+                    </div>
+                </div>
+                
+                <div class="summary">
+                    <div class="section-title">Situation Assessment</div>
+                    <div class="summary-text">${score.ai_summary || 'No summary available.'}</div>
+                </div>
+                
+                <div class="recommendations">
+                    <div class="section-title">Safety Recommendations</div>
+                    ${Object.entries(recommendations).map(([key, value]) => `
+                        <div class="rec-item">
+                            <div class="rec-label">${formatRecKey(key)}</div>
+                            <div class="rec-text">${value}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            mapView.style.display = 'none';
+            detailView.classList.add('active');
+        }
+        
+        // Show map view
+        function showMap() {
+            document.getElementById('map-view').style.display = 'block';
+            document.getElementById('detail-view').classList.remove('active');
+        }
+        
+        // Format recommendation key
+        function formatRecKey(key) {
+            return key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        }
+        
+        // Click handler for countries
+        document.querySelectorAll('.country.analyzed').forEach(countryEl => {
+            countryEl.addEventListener('click', () => {
+                const countryName = countryEl.dataset.country;
+                showCountryDetail(countryName);
+            });
+        });
+        
+        // Initialize
+        fetchScores();
+        setInterval(fetchScores, 5 * 60 * 1000); // Refresh every 5 minutes
+    </script>
+</body>
+</html>

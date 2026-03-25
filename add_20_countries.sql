@@ -1,4 +1,4 @@
--- TravelGuard: Add 20 Countries for Global Coverage
+-- Travint.ai: Add 20 Countries for Global Coverage
 -- Run this in your Supabase SQL editor
 
 INSERT INTO countries (name, iso_code, created_at)

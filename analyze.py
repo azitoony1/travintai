@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-TravelGuard — AI Analysis Pipeline (Gemini)
+Travint.ai — AI Analysis Pipeline (Gemini)
 
 Takes raw data from ingestion and generates:
 - 5-level threat scores (GREEN/YELLOW/ORANGE/RED/PURPLE) per category
@@ -603,7 +603,7 @@ def main():
     """Main analysis routine with parallel processing."""
     
     print("="*44)
-    print("   TravelGuard — AI Analysis (Gemini)   ")
+    print("   Travint.ai — AI Analysis (Gemini)")
     print("="*44)
     print(f"\nStarted: {datetime.now(timezone.utc).isoformat()} UTC\n")
     
