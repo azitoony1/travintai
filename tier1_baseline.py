@@ -559,13 +559,60 @@ INFRASTRUCTURE — Score based on travel infrastructure quality and safety.
   RED:    Poor infrastructure. Dangerous roads. Unreliable utilities. Significant disruption risk.
   PURPLE: Infrastructure collapsed. No reliable transport, power, water, or communications.
 
+QUANTITATIVE THRESHOLDS (use these numbers, not vague descriptions):
+
+TERRORISM thresholds:
+  GREEN:  0 attacks with fatalities in past 5 years. No credible active groups.
+  YELLOW: Foiled plots or minor incidents only. 0-1 total fatalities in 3 years.
+  ORANGE: 1-2 attacks with casualties in past 2 years (1-4 deaths each). OR active organised
+          group with demonstrated capability but limited recent activity.
+  RED:    Single mass-casualty attack (5+ deaths) in past 12 months. OR 2+ fatal attacks
+          in past 12 months. OR persistent high-frequency incidents with ongoing threat assessment.
+  PURPLE: Weekly/monthly mass-casualty attacks. Foreigners specifically targeted.
+          State cannot guarantee security in any major area.
+
+ARMED CONFLICT thresholds:
+  GREEN:  No fighting on national territory.
+  YELLOW: Historical/frozen conflict in remote border areas only. OR overseas military
+          deployment with zero home-territory fighting.
+  ORANGE: Active conflict in less than 20% of territory. Capital and major cities safe.
+          Under 1,000 conflict deaths per month.
+  RED:    Widespread conflict, multiple regions. Capital or major cities threatened.
+          1,000-10,000 conflict deaths per month.
+  PURPLE: Full-scale war. Active fighting in or near capital. Over 10,000 deaths per month.
+
+CRIME thresholds (intentional homicide rate per 100,000/year as anchor):
+  GREEN:  Under 5 per 100k. Low organised crime. Travelers safe with normal precautions.
+  YELLOW: 5-15 per 100k. Petty theft common. Standard urban awareness needed.
+  ORANGE: 15-30 per 100k. OR kidnapping risk in specific areas. Avoid certain neighbourhoods.
+  RED:    30-60 per 100k. OR systematic kidnapping targeting foreigners.
+  PURPLE: Over 60 per 100k. Travelers actively targeted. Criminal organisations control territory.
+
+HEALTH thresholds:
+  GREEN:  High-income country with functional hospital system. Routine vaccinations sufficient.
+          No active disease outbreaks. (Australia, EU, USA, Japan = GREEN)
+  YELLOW: Adequate urban healthcare. Some rural limitations. Minor endemic disease risk.
+  ORANGE: Limited healthcare outside major cities. Active endemic diseases (malaria, dengue,
+          cholera). Medical evacuation insurance strongly recommended.
+  RED:    Poor healthcare infrastructure nationwide. Active epidemic or outbreak.
+          Medical evacuation very likely needed if seriously ill.
+  PURPLE: Healthcare system has collapsed. No safe medical care available.
+
+INFRASTRUCTURE thresholds:
+  GREEN:  Road fatality rate under 10 per 100k/year. Reliable power, water, internet.
+          Modern transport. (Australia, EU, USA = GREEN)
+  YELLOW: Road deaths 10-20 per 100k. Generally reliable utilities. Some rural gaps.
+  ORANGE: Road deaths 20-30 per 100k. Frequent power or water outages. Transport unreliable.
+  RED:    Road deaths over 30 per 100k. Utilities unreliable everywhere.
+  PURPLE: Infrastructure has collapsed. No reliable transport, power, water, or communications.
+
 CALIBRATION EXAMPLES:
-  Australia: Generally GREEN/YELLOW on most categories. Even with the December 2025
-  Bondi attack, terrorism is ORANGE-RED (not PURPLE). Armed conflict is YELLOW at most
-  (overseas deployment, no fighting on home soil).
-  Israel (March 2026): PURPLE armed_conflict, PURPLE regional_instability (active war on
-  multiple fronts, Iran missiles, direct threat to entire country).
-  France: YELLOW overall. ORANGE terrorism (historical attacks, active threat). GREEN armed_conflict.
+  Australia: Crime GREEN (<2 homicides/100k). Health GREEN (excellent hospitals).
+  Infrastructure GREEN (modern). Terrorism RED only if Dec 2025 attack killed 5+ people.
+  Armed_conflict YELLOW (overseas deployment, no home-soil fighting).
+  Israel (March 2026): PURPLE armed_conflict (active multi-front war, missiles on cities).
+  France: YELLOW overall. ORANGE terrorism (2015-2024 attack history, active threat level).
+          GREEN armed_conflict. YELLOW crime (~1.3 homicides/100k).
 
 VETO RULE: If any of armed_conflict, regional_instability, terrorism, or civil_strife
 is RED or PURPLE, the total_score must be at least that level.
