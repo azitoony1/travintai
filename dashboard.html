@@ -500,6 +500,7 @@
         
         .category-item {
             display: flex;
+            flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
             padding: 12px;
@@ -507,8 +508,48 @@
             border: 1px solid var(--border);
             border-radius: 6px;
             margin-bottom: 8px;
+            cursor: default;
+            transition: border-color 0.15s;
         }
-        
+        .category-item.expandable {
+            cursor: pointer;
+        }
+        .category-item.expandable:hover {
+            border-color: rgba(255,255,255,0.2);
+        }
+        .category-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+        .category-chevron {
+            font-size: 9px;
+            color: var(--text-dim);
+            margin-left: 8px;
+            transition: transform 0.2s ease;
+            flex-shrink: 0;
+        }
+        .category-item.expanded .category-chevron {
+            transform: rotate(180deg);
+        }
+        .category-justification {
+            width: 100%;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.25s ease, padding 0.25s ease;
+            font-size: 12px;
+            color: var(--text-dim);
+            line-height: 1.6;
+            padding-top: 0;
+        }
+        .category-item.expanded .category-justification {
+            max-height: 300px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+            margin-top: 8px;
+        }
+
         .category-name {
             font-size: 13px;
             color: var(--text-dim);
@@ -772,6 +813,9 @@
             .category-item {
                 padding: 10px;
                 margin-bottom: 6px;
+            }
+            .category-item.expanded .category-justification {
+                max-height: 400px;
             }
             
             .category-name {
@@ -1086,7 +1130,7 @@
             'solo_women': 'Solo Women'
         };
 
-        function showCountryDetail(countryName) {
+        async function showCountryDetail(countryName) {
             const score = scoresData[countryName]?.[currentLayer];
 
             if (!score) {
@@ -1143,6 +1187,25 @@
             } catch (e) {
                 regions = [];
             }
+
+            // Fetch stability justifications from baseline_versions (not stored in score_history)
+            let justifications = {};
+            if (score.baseline_version_id) {
+                try {
+                    const headers = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` };
+                    const jResp = await fetch(
+                        `${SUPABASE_URL}/rest/v1/baseline_versions?select=stability_justifications&id=eq.${score.baseline_version_id}`,
+                        { headers }
+                    );
+                    if (jResp.ok) {
+                        const jData = await jResp.json();
+                        const raw = jData?.[0]?.stability_justifications;
+                        if (raw) {
+                            justifications = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                        }
+                    }
+                } catch (e) { /* non-fatal — accordion items just won't expand */ }
+            }
             
             document.getElementById('detail-country-name').textContent = countryName;
             document.getElementById('detail-content').innerHTML = `
@@ -1160,12 +1223,22 @@
                 <div style="padding: 24px;">
                     <div class="detail-threat-badge ${level}">${label}</div>
                     <div class="threat-categories">
-                        ${['armed_conflict', 'regional_instability', 'terrorism', 'civil_strife', 'crime', 'health', 'infrastructure'].map(cat => `
-                            <div class="category-item">
-                                <span class="category-name">${cat.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
-                                <span class="category-level ${score[cat].toLowerCase()}">${THREAT_LABELS[score[cat]]}</span>
-                            </div>
-                        `).join('')}
+                        ${['armed_conflict', 'regional_instability', 'terrorism', 'civil_strife', 'crime', 'health', 'infrastructure'].map(cat => {
+                            const label = cat.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                            const j = justifications[cat] || '';
+                            const hasJ = j.length > 0;
+                            return `
+                            <div class="category-item${hasJ ? ' expandable' : ''}" ${hasJ ? `onclick="this.classList.toggle('expanded')"` : ''}>
+                                <div class="category-item-row">
+                                    <span class="category-name">${label}</span>
+                                    <div style="display:flex;align-items:center;gap:6px;">
+                                        <span class="category-level ${score[cat].toLowerCase()}">${THREAT_LABELS[score[cat]]}</span>
+                                        ${hasJ ? `<span class="category-chevron">▼</span>` : ''}
+                                    </div>
+                                </div>
+                                ${hasJ ? `<div class="category-justification">${j}</div>` : ''}
+                            </div>`;
+                        }).join('')}
                     </div>
                 </div>
                 
@@ -1242,11 +1315,18 @@
             
             document.getElementById('detail-panel').classList.add('open');
             
-            // Zoom to country
+            // Zoom to country, offsetting for the detail panel on desktop so the
+            // country appears centred in the visible (non-panel) portion of the map.
+            const panelOffset = window.innerWidth > 768 ? 450 : 0;
+            const fitOpts = {
+                paddingTopLeft:     [50, 50],
+                paddingBottomRight: [panelOffset + 50, 50],
+                maxZoom: 7
+            };
             if (COUNTRY_BOUNDS[countryName]) {
-                map.fitBounds(COUNTRY_BOUNDS[countryName], { padding: [50, 50] });
+                map.fitBounds(COUNTRY_BOUNDS[countryName], fitOpts);
             } else if (countryLayers[countryName]) {
-                map.fitBounds(countryLayers[countryName].getBounds(), { padding: [50, 50], maxZoom: 7 });
+                map.fitBounds(countryLayers[countryName].getBounds(), fitOpts);
             }
         }
         

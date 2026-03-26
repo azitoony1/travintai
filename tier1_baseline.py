@@ -1280,15 +1280,11 @@ Return ONLY this JSON (no markdown, no extra text):
         import re
         text = re.sub(r",\s*([}\]])", r"\1", text)
 
-        # Strip any trailing text after the final closing brace (Gemini sometimes
-        # appends explanatory prose after the JSON block, causing "Extra data" errors)
-        last_brace = text.rfind("}")
-        if last_brace != -1:
-            text = text[:last_brace + 1]
-
-        # Attempt full parse
+        # Attempt full parse — use raw_decode so trailing prose after the closing }
+        # is silently ignored instead of raising "Extra data". This is the correct
+        # fix for Gemini appending explanatory text after the JSON block.
         try:
-            analysis = json.loads(text)
+            analysis, _ = json.JSONDecoder().raw_decode(text)
         except json.JSONDecodeError as e:
             # Fallback: extract just the scores block via regex — scores are the only
             # required field. The rest (narrative, justifications) can be empty strings.
