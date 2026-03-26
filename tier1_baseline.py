@@ -173,11 +173,12 @@ def calculate_total_score(category_scores):
     """
     Total score logic — three layers applied in priority order:
 
-    LAYER 1 — HARD VETO (overrides everything, total = that level):
-      armed_conflict RED    → total RED
+    LAYER 1 — HARD VETO (armed_conflict PURPLE only):
       armed_conflict PURPLE → total PURPLE
-      These are non-negotiable: if there is active widespread conflict or full-scale war
-      on the country's territory, the overall rating matches it.
+      armed_conflict RED does NOT hard veto. RED means serious conflict exists but
+      safe zones are identifiable — a traveler can reduce risk by destination choice.
+      Only PURPLE (nationwide war, no safe zones, evacuation may be impossible) forces
+      the total regardless of other categories.
 
     LAYER 2 — WEIGHTED AVERAGE (determines base total when no hard veto):
       All 7 categories contribute. Security categories count DOUBLE:
@@ -205,10 +206,15 @@ def calculate_total_score(category_scores):
     def lvl(cat):
         return level_to_int.get(category_scores.get(cat, "GREEN"), 1)
 
-    # ── LAYER 1: Hard veto — armed_conflict RED/PURPLE ───────────────────────
+    # ── LAYER 1: Hard veto — armed_conflict PURPLE only ──────────────────────
+    # RED does NOT hard veto. RED means "serious conflict, safe zones exist."
+    # Only PURPLE (nationwide war, no safe zones, evacuation may be impossible)
+    # forces the total. A traveler in a RED armed_conflict country can still
+    # meaningfully reduce risk by choosing where to go — so the total is
+    # determined by the weighted average and soft floors, not a veto.
     ac = lvl("armed_conflict")
-    if ac >= 4:
-        return int_to_level[ac]
+    if ac >= 5:
+        return "PURPLE"
 
     # ── LAYER 2: Weighted average ─────────────────────────────────────────────
     weighted_sum = sum(
@@ -303,11 +309,17 @@ than a country where none occurred. Do not undercount recent history.
 
 === SCORING SCALE ===
 
-GREEN  (1): Safe / Normal structural conditions
-YELLOW (2): Elevated structural risk / Exercise caution
-ORANGE (3): Significant structural risk / Heightened precautions
-RED    (4): High structural risk / Reconsider travel
-PURPLE (5): Extreme risk / Do not travel (active war, systematic targeting, no consular protection)
+GREEN  (1): Normal conditions. Travel with standard precautions.
+YELLOW (2): Elevated structural risk. Be aware, make contingency plans.
+ORANGE (3): Significant risk. Meaningful precautions required. Some areas to avoid.
+RED    (4): High risk. Reconsider travel. Serious documented threats requiring real security
+            planning. State protection is partial but functional. Evacuation is possible.
+            Well-prepared travelers with clear justification can go.
+PURPLE (5): Do not travel. Conditions where even maximum civilian preparation cannot
+            reduce risk to an acceptable level. Reserved for: active full-scale war;
+            state collapse; or countries where the state itself systematically targets
+            foreign nationals. Evacuation may be impossible. Consular protection absent
+            or unreliable. This is not "be very careful" — it means do not go.
 
 === 7 SECURITY CATEGORIES ===
 
@@ -362,6 +374,26 @@ Identity-specific structural factors to assess:
 - Safety of public transport and taxis for women traveling alone
 - Healthcare access for women (reproductive health, assault victim care)
 - Countries where women CANNOT legally travel alone (guardianship systems)
+
+MANDATORY CIVIL STRIFE FLOORS FOR SOLO WOMEN:
+These are hard minimums — apply them regardless of recent reforms or reform trajectory:
+
+  Legally enforced dress code with criminal penalties (e.g. mandatory hijab with
+  police enforcement, Saudi Arabia, Iran): civil_strife MINIMUM ORANGE.
+  Do NOT score GREEN or YELLOW even if enforcement has become less strict recently.
+  The law exists and can be applied against a foreign woman traveler.
+
+  Male guardianship laws restricting women's independent movement or hotel check-in
+  (Saudi Arabia historically, Afghanistan): civil_strife MINIMUM RED, total MINIMUM RED.
+  A solo woman traveler who legally cannot stay in a hotel alone or move freely
+  without a male companion faces a structural RED risk regardless of other factors.
+
+  Active crackdown on women's rights with documented arrests of women for dress/behavior
+  (Iran 2022-present): civil_strife raises to RED or PURPLE.
+
+TERRORISM: Do NOT raise terrorism above base layer unless the briefing documents
+specific deliberate targeting of women by terrorist actors. General terrorism risk
+affects all travelers equally. Do not inflate for gender unless there is specific evidence.
 
 IMPORTANT: Armed Conflict and Regional Instability affect all travelers equally
 unless there is documented systematic targeting of women in conflict (e.g., sexual violence
@@ -643,6 +675,22 @@ without being robbed, and get from A to B?" If yes → not PURPLE.
 
 SCORING SCALE AND DEFINITIONS:
 
+CRITICAL PRINCIPLE — ARMED CONFLICT:
+Score what travelers PHYSICALLY ENCOUNTER on the ground, NOT the country's
+political or military involvement in a conflict.
+
+The armed_conflict score describes the PHYSICAL THREAT on the country's territory.
+Political involvement, sanctions, or diplomatic hostility do NOT raise armed_conflict —
+only physical fighting or attacks on the country's territory counts.
+
+armed_conflict RED does NOT automatically make the total RED. It is a serious
+contributor to the weighted average but the total score is determined by all 7
+categories together. A country can have armed_conflict RED and total ORANGE if
+other categories are low.
+
+armed_conflict PURPLE hard-vetoes the total to PURPLE. Use PURPLE only when the
+physical threat meets the criteria checklist above (2 of 4 criteria).
+
 ARMED CONFLICT — Score based on conflict ON THE COUNTRY'S TERRITORY or directly threatening it.
   GREEN:  No armed conflict. Country is not at war.
   YELLOW: Localized or low-level conflict in remote border areas only. Does not affect
@@ -653,10 +701,21 @@ ARMED CONFLICT — Score based on conflict ON THE COUNTRY'S TERRITORY or directl
           (Either condition alone is sufficient — does not require both.)
           OR regular missile/rocket/airstrike attacks on populated areas regardless of
           death count — even intercepted missiles count if they are routine and ongoing.
-  PURPLE: Full-scale war. Active fighting in or near capital or major cities. Daily incoming
-          fire. Territory actively contested across multiple fronts. Do not travel.
+          At least one identifiable safe region with significant population exists —
+          a traveler can still meaningfully reduce physical risk by choosing destination.
+  PURPLE: State has effectively collapsed AND/OR active ground combat in the capital city
+          with no functioning civil authority AND no meaningful safe zones AND evacuation
+          is genuinely impossible. Attacks are nationwide and no civil defense exists to
+          help civilians protect themselves. A traveler CANNOT reduce physical conflict
+          risk by any reasonable preparation or destination choice.
+          This is NOT simply "at war". A country fighting back effectively with a
+          functioning government, military, sirens, shelters, and open airports is RED.
+          PURPLE is for collapsed states: Haiti, Somalia, Sudan (Khartoum during RSF
+          offensive), Gaza 2024, Syria 2015-2019. NOT for Israel, Ukraine, Lebanon.
   NOTE: Overseas military deployment = YELLOW at most, never RED or PURPLE.
   NOTE: Regular incoming missiles = RED minimum, even if mostly intercepted.
+  NOTE: Being the aggressor/initiator of a war fought on another country's soil = YELLOW.
+  NOTE: Active war + functioning state + civil defense + open airport = RED, not PURPLE.
 
 REGIONAL INSTABILITY — Score based on how much neighboring/regional conflicts affect THIS country.
   GREEN:  Stable neighborhood. No meaningful spillover risk.
@@ -733,7 +792,15 @@ INFRASTRUCTURE — Score based on the PHYSICAL STATE of roads, power, water, and
   Israel (March 2026) = YELLOW infrastructure (roads work, power/water/internet normal,
   minor disruption from alerts). Iran = ORANGE (sanctions cause shortages, not collapse).
 
-QUANTITATIVE THRESHOLDS (use these numbers, not vague descriptions):
+QUANTITATIVE THRESHOLDS:
+
+IMPORTANT — APPROXIMATE ANCHORS, NOT HARD CUTOFFS:
+These numbers are calibration anchors, not scientific thresholds. Real-world data is
+noisy — especially outside OECD countries where reporting is incomplete or delayed.
+When data quality is LOW, use the number as a guide but apply judgment. A country
+reporting 14.8 homicides/100k with poor reporting systems may be effectively ORANGE.
+A country at 31/100k with well-documented data and good enforcement may trend toward
+RED but warrant MEDIUM confidence. Confidence levels matter as much as the scores.
 
 TERRORISM thresholds:
   GREEN:  0 attacks with fatalities in past 5 years. No credible active groups operating.
@@ -759,14 +826,27 @@ ARMED CONFLICT thresholds:
   GREEN:  No fighting on national territory.
   YELLOW: Historical/frozen conflict in remote border areas only. OR overseas military
           deployment with zero home-territory fighting.
-  ORANGE: Active conflict in less than 20% of territory. Capital and major cities safe.
-          Under 500 conflict deaths per month.
+  ORANGE: Active conflict in less than ~20% of territory. Capital and major cities safe.
+          Under ~500 conflict deaths per month (approximate — use judgment on data quality).
   RED:    Widespread conflict affecting multiple regions. OR regular missile/rocket attacks
           OR airstrikes on populated areas — regardless of death count. Capital or major
-          cities threatened. OR 500+ conflict deaths per month nationally.
+          cities threatened. OR ~500+ conflict deaths per month nationally.
           NOTE: Regular incoming missiles/rockets = RED minimum, even if intercepted.
-  PURPLE: Full-scale war. Active fighting in or near capital or major cities. Daily
-          missile/air attacks. Territory actively contested. Multiple active fronts.
+  PURPLE: State collapse AND active ground combat in capital with no civil defense AND
+          no safe zones AND evacuation impossible. Same standard as main checklist.
+          A war-fighting nation with functioning government, military, shelters, and
+          open airports is RED. PURPLE = collapsed state (Haiti, Somalia, Sudan/RSF
+          offensive, Gaza 2024, Syria 2015). NOT Israel, NOT Ukraine, NOT Lebanon.
+
+  CROSS-BORDER KINETIC TIE-BREAKER (regional_instability vs armed_conflict boundary):
+  Use this when kinetic activity originates from outside the country but hits its territory:
+  If 3+ documented kinetic incidents (missile strikes, drone attacks, shelling, armed
+  incursions) originating from outside this country and deliberately targeting its territory
+  have occurred in the past 12 months → armed_conflict minimum ORANGE, regardless of
+  whether attacks were intercepted. This distinguishes grey-zone conflict (which crosses
+  into armed_conflict territory) from mere regional tension (regional_instability only).
+  Examples: Houthi missiles at Saudi Arabia = armed_conflict ORANGE+; Ukrainian drones
+  hitting Belgorod = armed_conflict ORANGE for Russia (not just regional_instability).
 
 CRIME thresholds (intentional homicide rate per 100,000/year as primary anchor — supplement
 with kidnapping risk, organised crime penetration, and armed robbery patterns):
@@ -842,13 +922,34 @@ CALIBRATION EXAMPLES:
   Total will be ORANGE from weighted average (regional instability RED raises the average
   but does not trigger the armed_conflict hard veto since armed_conflict = YELLOW).
 
+  Russia (March 2026): armed_conflict ORANGE maximum — NOT RED or PURPLE. Russia is the
+  aggressor in the Ukraine war, but the active fighting is IN UKRAINE, not on Russian
+  territory in any traveler-meaningful way. Some drone strikes have hit border regions
+  (Belgorod oblast) and occasionally Moscow suburbs, but there is NO active combat in
+  Moscow, St. Petersburg, or other major cities. A traveler to Moscow or St. Petersburg
+  is NOT in a war zone. Score ORANGE at most (acknowledging Belgorod border incidents),
+  NOT RED or PURPLE. Do NOT let Russia's role as war initiator inflate its armed_conflict
+  score — score only what physically threatens travelers on Russian soil.
+  Russia total = RED, driven by civil_strife RED (detention of Western nationals, wartime
+  repression, arrests of foreigners) and regional_instability PURPLE (Russia IS the
+  regional war — it is a frontline actor, not just a neighbor). Armed_conflict at ORANGE
+  means the hard veto does NOT fire; the RED total comes from weighted average and soft floors.
+
+  Israel infrastructure (March 2026): YELLOW — NOT RED or ORANGE. Roads, power, water,
+  and internet all function normally despite active war. The Iron Dome intercepts most
+  missiles. Missile alerts interrupt daily life but do not destroy infrastructure.
+  Missile alerts, curfews, and security restrictions are armed_conflict factors — score
+  armed_conflict PURPLE for the war, but keep infrastructure YELLOW for the physical
+  systems. Do not let war context push infrastructure above YELLOW when systems function.
+
   United Kingdom: armed_conflict YELLOW. terrorism ORANGE (organised groups exist, threat
   level elevated, but no sustained mass-casualty campaign recently). crime YELLOW
   (~1.2 homicides/100k — clearly below the 5/100k threshold for YELLOW). health GREEN
   (NHS functional). infrastructure GREEN (modern). Total ORANGE from weighted average.
 
 TOTAL SCORE LOGIC (Python calculates this — for your reference only):
-  1. armed_conflict RED/PURPLE → hard veto, total forced to that level
+  1. armed_conflict PURPLE only → hard veto, total = PURPLE
+     armed_conflict RED does NOT hard veto — it contributes to the weighted average.
   2. Otherwise: weighted average (security cats x2, others x1)
   3. terrorism or civil_strife PURPLE → total at least RED
   4. terrorism or civil_strife RED → total at least ORANGE
@@ -881,6 +982,187 @@ CRIME pre-screening (answer YES/NO based strictly on the briefing):
   Q2: Does the state lack control of MULTIPLE large provinces/states (not just neighbourhoods)?
   → RED requires YES to Q1 OR homicide rate 30-60/100k confirmed in briefing.
   → PURPLE requires YES to BOTH Q1 and Q2 with specific evidence.
+
+=== PURPLE vs RED — CRITERIA CHECKLIST ===
+
+PURPLE is reserved for a very small number of genuinely extreme situations worldwide.
+A useful calibration: at any given time, fewer than 10 countries in the world should
+score PURPLE. If you find yourself assigning PURPLE to more than that, you are over-scoring.
+
+Reference PURPLE countries (established pre-2026): Syria, Burkina Faso, DRC, Haiti,
+Yemen, Sudan, Somalia, Mali, and Nigeria (due to simultaneous crime PURPLE + terrorism PURPLE
+driving the weighted average, NOT because it meets state-collapse criteria alone).
+Note what is NOT on this list even under active war: Israel, Ukraine, Lebanon.
+A country at war with a functioning government is RED, not PURPLE.
+
+Before assigning PURPLE to ANY category or as a total, verify at least 2 of these 4:
+
+  (A) STATE COLLAPSE — The government has lost effective control of large portions of
+      its territory to non-state actors or rival factions, OR has ceased to function as
+      a state, OR active ground combat is occurring in the capital city with no
+      functioning civil authority remaining.
+      CRITICAL: A country that is FIGHTING a war effectively is NOT state-collapsed.
+      A functioning military, government, and civil defense system means the state is
+      intact. Israel during the Iran-Israel war = state intact = criterion (A) NOT met.
+      Ukraine during the Russia war = state intact, government functioning = NOT (A).
+      (A) is met by: Haiti (gang control, no state), Somalia (Al-Shabaab territorial
+      control), Sudan (RSF vs SAF splitting the state), Syria (multiple factions, Assad
+      collapse). NOT by Israel, Ukraine, or any country still governed effectively.
+
+  (B) Civilian preparation cannot reduce risk. A professional traveler with security
+      training, local contacts, armoured transport, and full situational awareness would
+      still face unacceptable risk.
+      CRITICAL: If a country has a functioning civil defense system — nationwide sirens,
+      bomb shelters, missile defense (e.g. Iron Dome), evacuation drills — then taking
+      cover IS meaningful civilian preparation that reduces risk. Civil defense working
+      = criterion (B) NOT met. Israel = criterion (B) NOT met (Iron Dome + shelters
+      mean a traveler can meaningfully reduce risk by responding to warnings).
+
+  (C) Evacuation is unreliable or dangerous. Commercial flights indefinitely suspended.
+      Land borders controlled by non-state actors. Leaving the country is itself a
+      high-risk act. A flight disrupted for days or requiring rerouting is NOT criterion (C).
+      Criterion (C) IS met by: Gaza 2024 (Rafah crossing closed, airport destroyed),
+      Yemen (airports targeted, Houthi blockade), Sudan during Khartoum fighting.
+
+  (D) Consular protection is absent, non-functional, or the state is the threat.
+      Your embassy cannot help you meaningfully if you are in trouble.
+      OR the government systematically detains, targets, or endangers foreign nationals.
+
+If fewer than 2 apply: score RED at most, not PURPLE.
+If 2 or more apply: PURPLE may be justified — but also ask the calibration question:
+  "Does this country belong in the same category as Haiti, Somalia, and Gaza?"
+  If the answer is "not really", revise down to RED.
+
+FUNCTIONING STATE CEILING — HARD RULE:
+A country with ALL of the following cannot be PURPLE for armed_conflict:
+  1. A functioning central government (not collapsed, not controlled by militias)
+  2. A functioning national military (actively defending, not routed)
+  3. Civil defense infrastructure (sirens, shelters, warning systems, missile defense)
+     that gives civilians meaningful ability to protect themselves
+  4. At least one viable evacuation route (airport operating, or safe land border)
+This ceiling applies even under heavy daily missile or drone attacks.
+Israel during the Iran-Israel war (2025-2026): meets all 4 → armed_conflict RED.
+Ukraine during the Russia war: meets all 4 for non-frontline regions → armed_conflict RED.
+
+PURPLE total requires armed_conflict PURPLE (hard-veto) OR a combination of PURPLE
+sub-scores driving the weighted average to 4.5+ while satisfying the checklist above.
+
+RED means: serious documented risk requiring real security planning. Well-prepared
+travelers with clear justification can go. The state provides partial but real
+protection. Evacuation is possible though may be disrupted. Risk is serious but
+mitigable. RED covers active war zones with functioning states (Israel, Ukraine),
+high-crime countries, and authoritarian states that are dangerous but not collapsed.
+
+PURPLE means: the state cannot protect you AND you cannot protect yourself AND you
+cannot leave reliably. These three things together — not just one or two.
+
+=== SOURCE ARBITRATION HIERARCHY ===
+
+When sources conflict, apply this priority order:
+
+  TIER 1 — Highest authority (government advisory specific to this traveler identity):
+    Israeli NSC warning level (for jewish_israeli layer — most specific for Israeli nationals)
+    US State Dept Travel Advisory level (authoritative for US nationals, widely respected)
+    UK FCDO Travel Advice (authoritative for UK nationals, independently assessed)
+    Israeli NSC for general travelers (cross-check for base layer)
+
+  TIER 2 — Specialist indices (methodologically robust, annual):
+    UNODC intentional homicide rates (crime anchor — most reliable cross-country data)
+    RSF Press Freedom Index (journalist risk)
+    ILGA State-Sponsored Homophobia (LGBTQ+ risk)
+    Georgetown GIWPS Women Peace & Security Index (solo women)
+    Global Peace Index (GPI) (conflict/stability anchor)
+    ACLED conflict event database (precise event location and frequency)
+
+  TIER 3 — Supplementary context (informative but less methodologically rigorous):
+    News reporting (useful for recent events, but single incidents can distort picture)
+    NGO reports (valuable for identity-specific risks, may reflect advocacy bias)
+    Academic sources (useful for historical context)
+
+When a TIER 1 source says RED and a TIER 3 source implies YELLOW: follow TIER 1.
+When TIER 1 sources conflict with each other (e.g. State Dept Level 2, FCDO higher):
+  Use the higher rating as the floor, note the conflict in confidence_notes.
+Always cite which tier each source belongs to in sources_used.
+
+=== TEMPORAL CONTEXT — TREND AND ESCALATION ===
+
+Tier 1 is a STRUCTURAL baseline. But the baseline should note the direction of travel.
+Answer these for the overall assessment (not per-category):
+
+  trend: Is the security situation IMPROVING, STABLE, or DETERIORATING over the past 6 months?
+         Base this on structural indicators, not single incidents.
+
+  escalation_flag: Set to true if there has been a SIGNIFICANT structural change in the
+                   past 90 days that has moved or should move the baseline (a new conflict
+                   starting, a coup, a peace agreement, a new terrorist campaign).
+                   Set to false if conditions are stable or only minor fluctuations.
+
+  escalation_note: If escalation_flag is true, briefly describe the specific change
+                   and which categories it affects.
+
+These fields are used by the Tier 2 daily pipeline to prioritise monitoring.
+A DETERIORATING + escalation_flag=true country gets daily Tier 2 checks.
+A STABLE country may only need weekly Tier 2 scans.
+
+=== REGIONAL SCORING ===
+
+The country-level scores above represent the TYPICAL TRAVELER DESTINATION — major
+cities, tourist hubs, business centres. Now identify up to 5 distinct zones within
+the country whose security profile differs materially from that baseline.
+
+INCLUDE a region when:
+  - Its total score would differ from the country-level total by at least ONE level, OR
+  - At least 2 of its category scores differ from the country level by at least one level.
+
+DO NOT invent regions that match the country baseline — omit them.
+DO NOT force regions on countries that are genuinely uniform. Netherlands, Australia,
+Poland may produce zero regions. That is correct.
+
+For each region, list ONLY the categories that differ from the country level.
+Categories not listed are assumed to match the country-level score exactly.
+
+The regional total_score is computed using the same veto/weighted-average/soft-floor
+logic as the country total, but applied to the region's category mix (country scores
+overridden by the region's specific scores where provided).
+
+REGIONAL CALIBRATION EXAMPLES:
+  Ukraine (country: armed_conflict RED, total RED):
+    Region "Eastern Frontline" (Kharkiv, Donetsk, Luhansk, Zaporizhzhia frontline):
+      armed_conflict: PURPLE → total: PURPLE
+    Region "Western Ukraine" (Lviv, Uzhhorod, Ivano-Frankivsk):
+      armed_conflict: ORANGE → total: ORANGE
+
+  Israel (country: armed_conflict RED, total RED):
+    Region "Northern Border" (Metula, Kiryat Shmona — within 5km of Lebanon border):
+      armed_conflict: PURPLE (daily Hezbollah fire, very short warning times) → total: PURPLE
+    Region "Gaza Envelope" (within 7km of Gaza border, now depopulated):
+      armed_conflict: PURPLE → total: PURPLE
+    Region "Tel Aviv / Central" (Tel Aviv, Jerusalem, Beer Sheva):
+      [no change from country level — omit this region]
+
+  Nigeria (country: total RED):
+    Region "Northeast" (Borno, Yobe, Adamawa states — Boko Haram/ISWAP):
+      terrorism: PURPLE, armed_conflict: RED → total: PURPLE
+    Region "Northwest" (Katsina, Sokoto, Zamfara — bandit/kidnap belt):
+      armed_conflict: RED, crime: PURPLE → total: RED/PURPLE
+    Region "Lagos / Abuja":
+      crime: ORANGE, terrorism: ORANGE → total: ORANGE
+
+  Mexico (country: total ORANGE):
+    Region "Sinaloa / Tamaulipas / Colima" (cartel heartland):
+      crime: PURPLE, civil_strife: RED → total: RED
+    Region "Cancún / Riviera Maya / Los Cabos" (tourist corridors):
+      crime: YELLOW → total: YELLOW
+
+  DRC (country: total RED):
+    Region "Eastern Congo" (North Kivu, South Kivu, Ituri — M23/armed groups):
+      armed_conflict: PURPLE, health: PURPLE → total: PURPLE
+    Region "Kinshasa":
+      [no material change from country level — omit]
+
+IDENTITY LAYER REGIONS: If scoring an identity layer (jewish_israeli, solo_women),
+regional scores for that layer must be >= the base layer regional scores for the same
+geography. Apply the same base-floor principle at the regional level.
 
 Return ONLY this JSON (no markdown, no extra text):
 {{
@@ -922,9 +1204,16 @@ Return ONLY this JSON (no markdown, no extra text):
     "health":               "HIGH|MEDIUM|LOW|INSUFFICIENT",
     "infrastructure":       "HIGH|MEDIUM|LOW|INSUFFICIENT"
   }},
+  "trend": "IMPROVING|STABLE|DETERIORATING",
+  "escalation_flag": false,
+  "escalation_note": "If escalation_flag is true: describe the specific structural change and which categories it affects. Otherwise leave empty string.",
+  "data_quality": {{
+    "overall": "HIGH|MEDIUM|LOW",
+    "note": "One sentence on data gaps, source conflicts, or reliability issues. E.g. 'UNODC homicide data 2 years old; civil strife scoring relies on news reporting only.' If data is solid, say so."
+  }},
   "baseline_narrative": "3-4 paragraphs. Specific, direct. No AI filler. Based on the briefing.",
-  "veto_explanation": "One sentence: which hard veto fired, or explain weighted average result.",
-  "sources_used": ["2-4 specific sources or incidents from the briefing with dates."],
+  "veto_explanation": "Be explicit: name the EXACT rule that determined the total score. Examples: 'armed_conflict RED triggered hard veto — total forced to RED.' OR 'No hard veto. Weighted average of 3.1 gives ORANGE. civil_strife RED applies soft floor of ORANGE — no change.' OR 'armed_conflict PURPLE hard veto overrides weighted average of 2.8.' Never vague — always name the mechanism.",
+  "sources_used": ["2-4 specific sources or incidents from the briefing with dates. Indicate source tier (Tier 1/2/3 per hierarchy above)."],
   "recommendations": {{
     "movement_access":        "one concrete sentence",
     "emergency_preparedness": "one concrete sentence",
@@ -933,7 +1222,18 @@ Return ONLY this JSON (no markdown, no extra text):
     "crime_personal_safety":  "one concrete sentence",
     "travel_logistics":       "one concrete sentence"
   }},
-  "watch_factors": "2-3 specific structural developments to monitor."
+  "watch_factors": "2-3 specific structural developments to monitor.",
+  "regions": [
+    {{
+      "name": "Zone name (e.g. 'Northeast', 'Northern Border', 'Lagos/Abuja')",
+      "geography": "Specific states, provinces, or cities covered — one sentence.",
+      "total_score": "GREEN|YELLOW|ORANGE|RED|PURPLE",
+      "scores": {{
+        "category_name": "SCORE — include ONLY categories that differ from the country-level score"
+      }},
+      "note": "One sentence: primary reason this zone differs from the country baseline."
+    }}
+  ]
 }}"""
 
     text = None
@@ -980,6 +1280,12 @@ Return ONLY this JSON (no markdown, no extra text):
         import re
         text = re.sub(r",\s*([}\]])", r"\1", text)
 
+        # Strip any trailing text after the final closing brace (Gemini sometimes
+        # appends explanatory prose after the JSON block, causing "Extra data" errors)
+        last_brace = text.rfind("}")
+        if last_brace != -1:
+            text = text[:last_brace + 1]
+
         # Attempt full parse
         try:
             analysis = json.loads(text)
@@ -1024,13 +1330,14 @@ Return ONLY this JSON (no markdown, no extra text):
                 scores[field] = "ORANGE"
 
         # Evidence gate: enforce pre-screening answers against scores
-        # If the model answered YES to the physical systems questions but still scored
-        # infrastructure RED/PURPLE, that is a contradiction — cap it at ORANGE.
+        # Infrastructure: if all 4 systems YES + no damage quote -> cap at YELLOW
+        # Health: if hospitals open + surgery available -> cap PURPLE at RED
+        # Crime: PURPLE requires both Q1+Q2 YES -> otherwise cap at RED
         pre = analysis.get("pre_screening", {})
         level_to_int = {"GREEN": 1, "YELLOW": 2, "ORANGE": 3, "RED": 4, "PURPLE": 5}
 
         infra_score = scores.get("infrastructure", "GREEN")
-        if level_to_int.get(infra_score, 1) >= 4:  # RED or PURPLE
+        if level_to_int.get(infra_score, 1) >= 3:  # ORANGE, RED, or PURPLE
             roads  = pre.get("infrastructure_q1_roads_passable", "").upper()
             elec   = pre.get("infrastructure_q2_electricity", "").upper()
             water  = pre.get("infrastructure_q3_water", "").upper()
@@ -1039,18 +1346,24 @@ Return ONLY this JSON (no markdown, no extra text):
             systems_up = all(x == "YES" for x in [roads, elec, water, net] if x)
             no_quote   = not quote or quote == "none found" or len(quote) < 20
             if systems_up and no_quote:
+                # All 4 systems confirmed YES + no physical damage quote = infrastructure is
+                # functioning normally. Cap at YELLOW — if roads/power/water/internet all work,
+                # there is no basis for ORANGE or above.
                 print(f"  [!] Infrastructure pre-screening: all systems YES + no damage quote "
-                      f"→ capping {infra_score} → ORANGE")
-                scores["infrastructure"] = "ORANGE"
+                      f"-> capping {infra_score} -> YELLOW")
+                scores["infrastructure"] = "YELLOW"
 
         health_score = scores.get("health", "GREEN")
-        if level_to_int.get(health_score, 1) >= 4:  # RED or PURPLE
+        if level_to_int.get(health_score, 1) >= 5:  # PURPLE only
             hosp = pre.get("health_q1_hospitals_open", "").upper()
             surg = pre.get("health_q2_emergency_surgery", "").upper()
             if hosp == "YES" and surg == "YES":
+                # Hospitals open + emergency surgery available = healthcare has NOT physically
+                # collapsed. PURPLE requires physical collapse (bombed/closed hospitals).
+                # Cap PURPLE -> RED. RED is appropriate when hospitals function but poorly.
                 print(f"  [!] Health pre-screening: hospitals open + surgery available "
-                      f"→ capping {health_score} → ORANGE")
-                scores["health"] = "ORANGE"
+                      f"-> capping {health_score} -> RED")
+                scores["health"] = "RED"
 
         crime_score = scores.get("crime", "GREEN")
         if level_to_int.get(crime_score, 1) == 5:  # PURPLE only
@@ -1058,7 +1371,7 @@ Return ONLY this JSON (no markdown, no extra text):
             prov   = pre.get("crime_q2_state_lost_multiple_provinces", "").upper()
             if not (target == "YES" and prov == "YES"):
                 print(f"  [!] Crime pre-screening: PURPLE requires both Q1+Q2 YES "
-                      f"→ capping PURPLE → RED")
+                      f"-> capping PURPLE -> RED")
                 scores["crime"] = "RED"
 
         analysis["scores"] = scores
@@ -1101,6 +1414,7 @@ def store_baseline(country_id, country_name, identity_layer, analysis, version_n
             "confidence_levels":        json.dumps(analysis.get("confidence_levels", {})),
             "baseline_narrative":       analysis.get("baseline_narrative", ""),
             "sources_used":             json.dumps(analysis.get("sources_used", [])),
+            "regions":                  json.dumps(analysis.get("regions", [])),
             "reviewed_by":              "pending",
             "created_at":               datetime.now(timezone.utc).isoformat(),
         }
@@ -1124,6 +1438,7 @@ def store_baseline(country_id, country_name, identity_layer, analysis, version_n
             "watch_factors":        analysis.get("watch_factors", ""),
             "sources":              json.dumps(analysis.get("sources_used", [])),
             "confidence":           json.dumps(analysis.get("confidence_levels", {})),
+            "regions":              json.dumps(analysis.get("regions", [])),
             "baseline_version_id":  baseline_version_id,
             "tier":                 1,
             "created_at":           datetime.now(timezone.utc).isoformat(),
@@ -1231,6 +1546,34 @@ def run_country_baseline(country_name, iso_code, layers, force=False):
         if not analysis:
             print(f"  [X] Analysis failed for {country_name}/{layer} - skipping")
             continue
+
+        # ── BASE FLOOR ENFORCEMENT ────────────────────────────────────────────
+        # Identity layer scores must be >= base layer scores in every category.
+        # The base layer is the floor — belonging to an identity group can only
+        # add risk, not remove it (with rare exceptions requiring strong evidence).
+        if layer != "base" and base_baseline:
+            base_scores  = base_baseline.get("scores", {})
+            layer_scores = analysis.get("scores", {})
+            cats = ["armed_conflict", "regional_instability", "terrorism",
+                    "civil_strife", "crime", "health", "infrastructure"]
+            lvl  = {"GREEN": 1, "YELLOW": 2, "ORANGE": 3, "RED": 4, "PURPLE": 5}
+            ilv  = {1: "GREEN", 2: "YELLOW", 3: "ORANGE", 4: "RED", 5: "PURPLE"}
+
+            floors_applied = []
+            for cat in cats:
+                base_int  = lvl.get(base_scores.get(cat, "GREEN"), 1)
+                layer_int = lvl.get(layer_scores.get(cat, "GREEN"), 1)
+                if layer_int < base_int:
+                    layer_scores[cat] = ilv[base_int]
+                    floors_applied.append(
+                        f"{cat}: {ilv[layer_int]} -> {ilv[base_int]}"
+                    )
+
+            if floors_applied:
+                print(f"  [!] Base floor applied to {len(floors_applied)} categories: "
+                      f"{'; '.join(floors_applied)}")
+                analysis["scores"] = layer_scores
+        # ─────────────────────────────────────────────────────────────────────
 
         # Store
         baseline_id = store_baseline(country_id, country_name, layer, analysis, next_version)

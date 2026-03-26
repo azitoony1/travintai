@@ -26,7 +26,7 @@ app.secret_key = secrets.token_hex(32)  # Generate secure secret key
 
 # ADMIN PASSWORD - Change this!
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "travelguard2026")  # Default password
-supabase = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))
+supabase = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_SERVICE_KEY"))
 
 # HTML Template
 LOGIN_TEMPLATE = """
@@ -284,11 +284,127 @@ ADMIN_TEMPLATE = """
             max-height: 300px;
             overflow-y: auto;
         }
-        
+
         .headline-item {
             padding: 8px 0;
             border-bottom: 1px solid #232b36;
             font-size: 13px;
+        }
+
+        .baseline-item {
+            padding: 16px;
+            margin-bottom: 12px;
+            background: #0d1117;
+            border: 1px solid #232b36;
+            border-radius: 8px;
+        }
+
+        .baseline-item:last-child { margin-bottom: 0; }
+
+        .baseline-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .baseline-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .baseline-country {
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .baseline-layer {
+            font-size: 11px;
+            font-family: monospace;
+            padding: 3px 8px;
+            background: #1a2129;
+            border-radius: 4px;
+            color: #8b949e;
+            text-transform: uppercase;
+        }
+
+        .baseline-total {
+            font-family: monospace;
+            font-weight: 700;
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+
+        .baseline-total.green  { background: #2d5a3d; color: #9fefb0; }
+        .baseline-total.yellow { background: #b8a02e; color: #fff8d0; }
+        .baseline-total.orange { background: #c45a1f; color: #ffe4c4; }
+        .baseline-total.red    { background: #b83232; color: #ffcaca; }
+        .baseline-total.purple { background: #6b3a8f; color: #e9d5ff; }
+
+        .baseline-narrative {
+            font-size: 12px;
+            color: #8b949e;
+            line-height: 1.6;
+            margin-bottom: 12px;
+            max-height: 80px;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+        }
+
+        .baseline-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-approve {
+            padding: 8px 20px;
+            background: #238636;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-approve:hover { background: #2ea043; }
+
+        .btn-reject {
+            padding: 8px 20px;
+            background: transparent;
+            color: #f85149;
+            border: 1px solid #f85149;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-reject:hover { background: #3d1a1a; }
+
+        .pending-count {
+            display: inline-block;
+            background: #f97316;
+            color: #fff;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 7px;
+            margin-left: 6px;
+        }
+
+        .empty-state {
+            color: #8b949e;
+            font-size: 13px;
+            padding: 20px 0;
+            text-align: center;
         }
         
         .notifications {
@@ -445,6 +561,46 @@ ADMIN_TEMPLATE = """
             </div>
         </div>
         
+        <!-- ── Pending Baselines Review Queue ─────────────────────────────── -->
+        <div class="card" style="margin-bottom: 20px;">
+            <h2>
+                Pending Baseline Review
+                {% if pending_baselines %}
+                <span class="pending-count">{{ pending_baselines|length }}</span>
+                {% endif %}
+            </h2>
+            {% if pending_baselines %}
+                {% for b in pending_baselines %}
+                <div class="baseline-item" id="baseline-{{ b.id }}">
+                    <div class="baseline-header">
+                        <div class="baseline-meta">
+                            <span class="baseline-country">{{ b.country_name }}</span>
+                            <span class="baseline-layer">{{ b.identity_layer }}</span>
+                            <span class="baseline-total {{ b.total_score.lower() }}">{{ b.total_score }}</span>
+                            <span style="font-size: 11px; color: #6e7681;">v{{ b.version_number }} · {{ b.time_ago }}</span>
+                        </div>
+                        <div class="baseline-actions">
+                            <button class="btn-approve" onclick="reviewBaseline('{{ b.id }}', 'approve')">✓ Approve</button>
+                            <button class="btn-reject" onclick="reviewBaseline('{{ b.id }}', 'reject')">✗ Reject</button>
+                        </div>
+                    </div>
+                    {% if b.narrative %}
+                    <div class="baseline-narrative">{{ b.narrative }}</div>
+                    {% endif %}
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        {% for cat, score in b.scores.items() %}
+                        <span style="font-family: monospace; font-size: 11px; padding: 2px 6px; background: #1a2129; border-radius: 3px; color: #8b949e;">
+                            {{ cat.replace('_', ' ') }}: <strong style="color: #e6edf3;">{{ score }}</strong>
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">No pending baselines. All assessments are up to date.</div>
+            {% endif %}
+        </div>
+
         <div class="grid">
             <div class="card">
                 <h2>Recent Headlines</h2>
@@ -511,6 +667,34 @@ ADMIN_TEMPLATE = """
             }
         }
         
+        async function reviewBaseline(id, action) {
+            const el = document.getElementById(`baseline-${id}`);
+            if (!el) return;
+            const confirmMsg = action === 'approve'
+                ? 'Approve this baseline? It will be marked as owner-reviewed.'
+                : 'Reject this baseline? It will be marked as rejected.';
+            if (!confirm(confirmMsg)) return;
+            el.style.opacity = '0.5';
+            el.style.pointerEvents = 'none';
+            try {
+                const resp = await fetch(`/baseline/${action}/${id}`, { method: 'POST' });
+                const data = await resp.json();
+                if (data.status === 'ok') {
+                    el.style.transition = 'opacity 0.4s';
+                    el.style.opacity = '0';
+                    setTimeout(() => { el.remove(); }, 400);
+                } else {
+                    alert(`Error: ${data.message}`);
+                    el.style.opacity = '1';
+                    el.style.pointerEvents = '';
+                }
+            } catch (e) {
+                alert(`Error: ${e}`);
+                el.style.opacity = '1';
+                el.style.pointerEvents = '';
+            }
+        }
+
         async function runTask(task) {
             const logDiv = document.getElementById('task-log');
             const logContent = document.getElementById('log-content');
@@ -609,6 +793,35 @@ def index():
     except FileNotFoundError:
         pass
     
+    # Get pending baselines for review
+    pending_baselines = []
+    try:
+        bv_result = (supabase.table("baseline_versions")
+                     .select("*, countries(name)")
+                     .eq("reviewed_by", "pending")
+                     .order("created_at", desc=False)
+                     .execute())
+        for b in bv_result.data:
+            scores = b.get("scores", {})
+            if isinstance(scores, str):
+                import json as _json
+                try:
+                    scores = _json.loads(scores)
+                except Exception:
+                    scores = {}
+            pending_baselines.append({
+                "id":            b["id"],
+                "country_name":  b["countries"]["name"] if b.get("countries") else "Unknown",
+                "identity_layer": b.get("identity_layer", "base"),
+                "version_number": b.get("version_number", 1),
+                "total_score":   b.get("total_score", "?"),
+                "scores":        scores,
+                "narrative":     (b.get("baseline_narrative") or "")[:300],
+                "time_ago":      get_time_ago(b["created_at"]),
+            })
+    except Exception as e:
+        print(f"Error fetching pending baselines: {e}")
+
     # Get notifications
     notifications = []
     unread_count = 0
@@ -641,7 +854,8 @@ def index():
         total_scores=total_scores,
         headlines=headlines,
         notifications=notifications,
-        unread_count=unread_count
+        unread_count=unread_count,
+        pending_baselines=pending_baselines
     )
 
 def get_time_ago(timestamp_str):
@@ -696,6 +910,36 @@ def run_task(task):
             
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/baseline/approve/<baseline_id>', methods=['POST'])
+def approve_baseline(baseline_id):
+    """Mark a baseline as owner-approved"""
+    if not session.get('authenticated'):
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 401
+    try:
+        supabase.table("baseline_versions").update({
+            'reviewed_by': 'owner_approved',
+            'reviewed_at': datetime.now(timezone.utc).isoformat()
+        }).eq('id', baseline_id).execute()
+        return jsonify({'status': 'ok'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/baseline/reject/<baseline_id>', methods=['POST'])
+def reject_baseline(baseline_id):
+    """Mark a baseline as rejected"""
+    if not session.get('authenticated'):
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 401
+    try:
+        supabase.table("baseline_versions").update({
+            'reviewed_by': 'rejected',
+            'reviewed_at': datetime.now(timezone.utc).isoformat()
+        }).eq('id', baseline_id).execute()
+        return jsonify({'status': 'ok'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
 
 @app.route('/notification/read/<notif_id>', methods=['POST'])
 def mark_notification_read(notif_id):

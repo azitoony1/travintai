@@ -102,26 +102,49 @@ TREND_THRESHOLD = 5  # Number of sub-threshold signals before flagging
 # =============================================================================
 
 def calculate_total_score(category_scores):
-    """Veto logic: RED/PURPLE veto categories override; else weighted average."""
-    max_veto = max(
-        LEVEL_TO_INT.get(category_scores.get(cat, "GREEN"), 1)
-        for cat in VETO_CATS
-    )
-    if max_veto >= 4:
-        return INT_TO_LEVEL[max_veto]
+    """
+    Three-layer total score logic — must match tier1_baseline.py exactly.
 
+    LAYER 1 — Hard veto: armed_conflict RED/PURPLE forces total to that level.
+               Only armed_conflict has a hard veto. regional_instability does NOT.
+
+    LAYER 2 — Weighted average: security categories count double.
+
+    LAYER 3 — Soft floors: terrorism or civil_strife PURPLE -> total at least RED;
+               terrorism or civil_strife RED -> total at least ORANGE.
+    """
+    security_cats = {"armed_conflict", "regional_instability", "terrorism", "civil_strife"}
+
+    # Layer 1: hard veto — armed_conflict PURPLE only (not RED)
+    # RED = serious conflict but safe zones exist; traveler can reduce risk by choice.
+    # PURPLE = nationwide war, no safe zones, evacuation may be impossible.
+    ac = LEVEL_TO_INT.get(category_scores.get("armed_conflict", "GREEN"), 1)
+    if ac >= 5:
+        return "PURPLE"
+
+    # Layer 2: weighted average
     weighted_sum = sum(
-        LEVEL_TO_INT.get(category_scores.get(cat, "GREEN"), 1) * (2 if cat in VETO_CATS else 1)
+        LEVEL_TO_INT.get(category_scores.get(cat, "GREEN"), 1) * (2 if cat in security_cats else 1)
         for cat in ALL_CATS
     )
-    total_weight = sum(2 if cat in VETO_CATS else 1 for cat in ALL_CATS)
+    total_weight = sum(2 if cat in security_cats else 1 for cat in ALL_CATS)
     avg = weighted_sum / total_weight
 
-    if avg <= 1.4: return "GREEN"
-    if avg <= 2.4: return "YELLOW"
-    if avg <= 3.4: return "ORANGE"
-    if avg <= 4.4: return "RED"
-    return "PURPLE"
+    if avg <= 1.4:   raw = "GREEN"
+    elif avg <= 2.4: raw = "YELLOW"
+    elif avg <= 3.4: raw = "ORANGE"
+    elif avg <= 4.4: raw = "RED"
+    else:            raw = "PURPLE"
+
+    # Layer 3: soft floors — terrorism and civil_strife only
+    ter = LEVEL_TO_INT.get(category_scores.get("terrorism",   "GREEN"), 1)
+    cs  = LEVEL_TO_INT.get(category_scores.get("civil_strife","GREEN"), 1)
+    max_ter_cs = max(ter, cs)
+    if max_ter_cs == 5:   floor = "RED"
+    elif max_ter_cs == 4: floor = "ORANGE"
+    else:                 floor = "GREEN"
+
+    return INT_TO_LEVEL[max(LEVEL_TO_INT[raw], LEVEL_TO_INT[floor])]
 
 
 def score_delta(old_score, new_score):
@@ -190,6 +213,7 @@ def get_active_baseline(country_id, identity_layer):
     Load the latest approved baseline for a country/layer.
     Falls back to pending baselines if no approved one exists.
     Returns None if no baseline exists at all (country not ready for Tier 2).
+    Also extracts trend/escalation fields written by Tier 1.
     """
     try:
         result = (
@@ -204,11 +228,75 @@ def get_active_baseline(country_id, identity_layer):
         if result.data:
             row = result.data[0]
             row["scores"] = json.loads(row["scores"]) if isinstance(row["scores"], str) else row["scores"]
+            # Parse analysis_json and extract Tier 1 temporal context
+            aj = row.get("analysis_json") or {}
+            if isinstance(aj, str):
+                try:
+                    aj = json.loads(aj)
+                except Exception:
+                    aj = {}
+            row["baseline_trend"]           = aj.get("trend", "STABLE")
+            row["baseline_escalation_flag"] = aj.get("escalation_flag", False)
+            row["baseline_escalation_note"] = aj.get("escalation_note", "")
+            row["baseline_data_quality"]    = (aj.get("data_quality") or {}).get("overall", "MEDIUM")
             return row
         return None
     except Exception as e:
         print(f"  [X] get_active_baseline failed: {e}")
         return None
+
+
+def get_expired_event_elevations(country_id, identity_layer):
+    """
+    Find categories where a Tier 2 event elevation has passed its expiry date.
+    Returns a set of category names whose event scores should be reset to baseline.
+    """
+    today = datetime.now(timezone.utc).date().isoformat()
+    try:
+        result = (
+            supabase.table("change_events")
+            .select("category, event_expiry")
+            .eq("country_id", country_id)
+            .eq("identity_layer", identity_layer)
+            .eq("event_elevated", True)
+            .lt("event_expiry", today)
+            .execute()
+        )
+        expired = {row["category"] for row in (result.data or [])}
+        if expired:
+            print(f"  [>] Expired event elevations found: {', '.join(expired)} — resetting to baseline")
+        return expired
+    except Exception as e:
+        print(f"  [!] Expired event check failed: {e}")
+        return set()
+
+
+def get_pending_deescalations(country_id, identity_layer):
+    """
+    Find categories where de-escalation is pending confirmation.
+    Returns a dict of {category: proposed_score} for categories awaiting a second
+    confirming cycle before the lower score is applied.
+    """
+    try:
+        result = (
+            supabase.table("change_events")
+            .select("category, new_score, created_at")
+            .eq("country_id", country_id)
+            .eq("identity_layer", identity_layer)
+            .eq("change_type", "DEESCALATION_PENDING")
+            .order("created_at", desc=True)
+            .execute()
+        )
+        # Return most recent pending de-escalation per category
+        seen = {}
+        for row in (result.data or []):
+            cat = row["category"]
+            if cat not in seen:
+                seen[cat] = row["new_score"]
+        return seen
+    except Exception as e:
+        print(f"  [!] Pending de-escalation check failed: {e}")
+        return {}
 
 
 def get_latest_score(country_id, identity_layer):
@@ -300,7 +388,7 @@ def reset_trend_signal(country_id, identity_layer):
 # Change Detection Prompt
 # =============================================================================
 
-def build_change_detection_prompt(country_name, identity_layer, baseline, current_scores, headlines, nsc_level=None):
+def build_change_detection_prompt(country_name, identity_layer, baseline, current_scores, headlines, nsc_level=None, expired_cats=None, pending_deescalations=None):
     """
     Build the Tier 2 change detection prompt.
 
@@ -327,10 +415,39 @@ def build_change_detection_prompt(country_name, identity_layer, baseline, curren
     )
     headlines_text = "\n".join(f"  {i+1}. {h}" for i, h in enumerate(headlines[:30]))
 
+    expired_cats        = expired_cats or set()
+    pending_deescalations = pending_deescalations or {}
+
+    # Temporal context from Tier 1 baseline
+    baseline_trend       = baseline.get("baseline_trend", "STABLE")
+    escalation_flag      = baseline.get("baseline_escalation_flag", False)
+    escalation_note      = baseline.get("baseline_escalation_note", "")
+    data_quality         = baseline.get("baseline_data_quality", "MEDIUM")
+
+    # Build contextual warnings for the prompt
+    temporal_context = f"Baseline trend: {baseline_trend}"
+    if escalation_flag:
+        temporal_context += f"\nEscalation flag: TRUE — {escalation_note}"
+    if expired_cats:
+        temporal_context += f"\nExpired event elevations (reset to baseline this cycle): {', '.join(expired_cats)}"
+    if pending_deescalations:
+        temporal_context += f"\nPending de-escalation (awaiting second confirming cycle): " + \
+                            ", ".join(f"{cat} -> {sc}" for cat, sc in pending_deescalations.items())
+
     prompt = f"""You are a travel security analyst running a CHANGE DETECTION check.
 Today: {today}
 Country: {country_name}
 Audience: {layer_desc}
+
+--- TEMPORAL CONTEXT ---
+
+{temporal_context}
+Data quality of baseline: {data_quality}
+
+A DETERIORATING baseline or escalation_flag=TRUE means: be more sensitive to worsening
+signals even if they are below the normal change threshold — mark them as sub_threshold_signal.
+An IMPROVING baseline means: require stronger evidence before scoring UP (the situation
+may be de-escalating and a single bad incident may be noise, not a trend reversal).
 
 --- YOUR TASK ---
 
@@ -367,10 +484,16 @@ For EACH of the 7 categories, determine:
    - Change type: "EVENT" (single incident, temporary) or "TREND" (pattern building)
    - EVENT scores auto-expire after 30 days with no confirming events
 
-2. SCORE DOWN (threat decreased, positive development): Headlines show genuine improvement.
+2. SCORE DOWN (de-escalation): Headlines show genuine structural improvement.
    - Required: verbatim quote confirming resolution/improvement
-   - Change type: "POSITIVE"
-   - Do not return to baseline automatically - verify through 2+ cycles first
+   - Change type: "DEESCALATION_PENDING" (NOT "POSITIVE")
+   - CRITICAL: De-escalation is NEVER applied in a single cycle. Set changed=true with
+     change_type="DEESCALATION_PENDING" and keep current_score at the CURRENT (higher) level.
+     The system will apply the lower score only after a second confirming cycle.
+   - This prevents a quiet news week from being mistaken for genuine de-escalation.
+   - Exception: if a peace agreement is signed, a ceasefire formally confirmed, or a
+     structural threat has demonstrably ended — then set change_type="POSITIVE" and
+     the score is applied immediately (but still flagged for owner review).
 
 3. NO CHANGE: Headlines do not provide specific evidence for a score change.
    - Keep current score. Do not change because of vague or unrelated news.
@@ -434,19 +557,46 @@ QUALITY RULES:
 # Storage
 # =============================================================================
 
-def store_tier2_result(country_id, country_name, identity_layer, baseline, analysis):
+def store_tier2_result(country_id, country_name, identity_layer, baseline, analysis,
+                        expired_cats=None, pending_deescalations=None, current_scores=None):
     """
     Store Tier 2 change detection result:
     1. score_history (always - every run creates a new record)
     2. change_events (only for changed categories)
-    3. review_queue (if large jump or RED/PURPLE change)
+    3. review_queue (if large jump, RED/PURPLE change, or rapid escalation)
     4. trend_signals (increment if sub-threshold signals detected)
-    Returns score_history_id or None.
+
+    Temporal rules enforced here:
+    - Expired event elevations: those categories reset to baseline score
+    - De-escalation pending: score NOT lowered this cycle; stored as DEESCALATION_PENDING
+    - Rapid escalation (>1 level jump): tagged URGENT in review_queue
     """
-    categories   = analysis.get("categories", {})
-    new_scores   = {cat: categories[cat]["current_score"] for cat in ALL_CATS if cat in categories}
-    total_score  = calculate_total_score(new_scores)
-    now          = datetime.now(timezone.utc).isoformat()
+    expired_cats          = expired_cats or set()
+    pending_deescalations = pending_deescalations or {}
+    categories            = analysis.get("categories", {})
+    now                   = datetime.now(timezone.utc).isoformat()
+
+    # Build effective new scores with temporal rules applied
+    baseline_scores = baseline.get("scores", {})
+    new_scores = {}
+    for cat in ALL_CATS:
+        cat_data  = categories.get(cat, {})
+        proposed  = cat_data.get("current_score", current_scores.get(cat, baseline_scores.get(cat, "GREEN")) if current_scores else baseline_scores.get(cat, "GREEN"))
+        existing  = (current_scores or baseline_scores).get(cat, baseline_scores.get(cat, "GREEN"))
+
+        # Rule 1: expired event elevation -> reset to baseline
+        if cat in expired_cats:
+            new_scores[cat] = baseline_scores.get(cat, "GREEN")
+            continue
+
+        # Rule 2: de-escalation pending -> keep current (higher) score this cycle
+        delta = LEVEL_TO_INT.get(proposed, 1) - LEVEL_TO_INT.get(existing, 1)
+        if delta < 0 and cat_data.get("change_type") == "DEESCALATION_PENDING":
+            new_scores[cat] = existing  # hold at current — apply next cycle if confirmed
+        else:
+            new_scores[cat] = proposed
+
+    total_score = calculate_total_score(new_scores)
 
     # -- 1. score_history ----------------------------------------------------
     history_id = None
@@ -479,57 +629,72 @@ def store_tier2_result(country_id, country_name, identity_layer, baseline, analy
         if not cat_data.get("changed"):
             continue
 
-        old_score  = baseline["scores"].get(cat, "GREEN")
-        new_score  = cat_data.get("current_score", old_score)
-        quote      = cat_data.get("source_quote", "")
-        delta      = score_delta(old_score, new_score)
+        old_score     = (current_scores or baseline_scores).get(cat, baseline_scores.get(cat, "GREEN"))
+        proposed_score = cat_data.get("current_score", old_score)
+        effective_score = new_scores.get(cat, old_score)  # may differ due to temporal rules
+        quote         = cat_data.get("source_quote", "")
+        change_type   = cat_data.get("change_type", "EVENT")
+        delta         = score_delta(old_score, proposed_score)
 
         if not quote:
             print(f"  [!] {cat}: changed=true but no source_quote - treating as no change")
             continue
 
-        changes_detected.append((cat, old_score, new_score, delta, cat_data))
+        # De-escalation pending: store the intent but flag clearly
+        if change_type == "DEESCALATION_PENDING":
+            print(f"  [>] {cat}: de-escalation pending confirmation "
+                  f"({old_score} -> {proposed_score}) — holding at {effective_score} this cycle")
+
+        # Rapid escalation: jump of 2+ levels
+        if delta >= 2:
+            print(f"  [!!] RAPID ESCALATION: {cat} jumped {old_score} -> {proposed_score} (+{delta} levels)")
+
+        changes_detected.append((cat, old_score, proposed_score, effective_score, delta, cat_data))
 
         try:
             expiry = None
-            if cat_data.get("event_elevated"):
+            if cat_data.get("event_elevated") and change_type not in ("DEESCALATION_PENDING", "POSITIVE"):
                 expiry = (datetime.now(timezone.utc) + timedelta(days=30)).date().isoformat()
 
             event_row = {
-                "country_id":      country_id,
-                "identity_layer":  identity_layer,
-                "category":        cat,
-                "old_score":       old_score,
-                "new_score":       new_score,
-                "source_quote":    quote,
-                "source_name":     cat_data.get("source_name", ""),
-                "source_url":      cat_data.get("source_url", ""),
-                "source_date":     cat_data.get("source_date"),
-                "change_type":     cat_data.get("change_type", "EVENT"),
-                "event_elevated":  cat_data.get("event_elevated", False),
-                "event_expiry":    expiry,
+                "country_id":       country_id,
+                "identity_layer":   identity_layer,
+                "category":         cat,
+                "old_score":        old_score,
+                "new_score":        proposed_score,  # store the proposed score
+                "source_quote":     quote,
+                "source_name":      cat_data.get("source_name", ""),
+                "source_url":       cat_data.get("source_url", ""),
+                "source_date":      cat_data.get("source_date"),
+                "change_type":      change_type,
+                "event_elevated":   cat_data.get("event_elevated", False),
+                "event_expiry":     expiry,
                 "score_history_id": history_id,
-                "created_at":      now,
+                "created_at":       now,
             }
             supabase.table("change_events").insert(event_row).execute()
-            direction = "-" if delta > 0 else "-"
-            print(f"  [OK] change_event: {cat} {old_score} - {new_score} {direction} ({cat_data.get('change_type')})")
+            arrow = "->" if delta >= 0 else "<-"
+            print(f"  [OK] change_event: {cat} {old_score} {arrow} {proposed_score} ({change_type})")
         except Exception as e:
             print(f"  [!] change_events insert failed for {cat}: {e}")
 
-        # Reset trend signal when a score officially changes
-        if delta != 0:
+        # Reset trend signal when a score officially goes up (confirmed escalation)
+        if delta > 0 and change_type != "DEESCALATION_PENDING":
             reset_trend_signal(country_id, identity_layer)
 
-    # -- 3. review_queue (large jumps or RED/PURPLE) --------------------------
+    # -- 3. review_queue (large jumps, RED/PURPLE, or rapid escalation) -------
     urgent_changes = [
-        (cat, old, new, delta, data)
-        for cat, old, new, delta, data in changes_detected
-        if abs(delta) > 1 or LEVEL_TO_INT.get(new, 1) >= 4
+        (cat, old, prop, eff, delta, data)
+        for cat, old, prop, eff, delta, data in changes_detected
+        if abs(delta) > 1 or LEVEL_TO_INT.get(prop, 1) >= 4 or delta >= 2
     ]
     if urgent_changes:
         try:
-            priority = "URGENT" if any(LEVEL_TO_INT.get(new, 1) >= 4 for _, _, new, _, _ in urgent_changes) else "STANDARD"
+            has_rapid    = any(delta >= 2 for _, _, _, _, delta, _ in urgent_changes)
+            has_critical = any(LEVEL_TO_INT.get(prop, 1) >= 4 for _, _, prop, _, _, _ in urgent_changes)
+            priority     = "URGENT" if (has_rapid or has_critical) else "STANDARD"
+            triggered_by = "rapid_escalation" if has_rapid else ("tier2_red_purple" if has_critical else "tier2_large_jump")
+
             review_row = {
                 "country_id":     country_id,
                 "identity_layer": identity_layer,
@@ -538,26 +703,29 @@ def store_tier2_result(country_id, country_name, identity_layer, baseline, analy
                     "country":      country_name,
                     "layer":        identity_layer,
                     "total_score":  total_score,
+                    "rapid_escalation": has_rapid,
                     "changes":      [
                         {
-                            "category":     cat,
-                            "old_score":    old,
-                            "new_score":    new,
-                            "delta":        delta,
-                            "quote":        data.get("source_quote"),
-                            "source":       data.get("source_name"),
-                            "change_type":  data.get("change_type"),
+                            "category":        cat,
+                            "old_score":       old,
+                            "proposed_score":  prop,
+                            "effective_score": eff,
+                            "delta":           delta,
+                            "quote":           data.get("source_quote"),
+                            "source":          data.get("source_name"),
+                            "change_type":     data.get("change_type"),
+                            "rapid":           delta >= 2,
                         }
-                        for cat, old, new, delta, data in urgent_changes
+                        for cat, old, prop, eff, delta, data in urgent_changes
                     ],
                     "history_id":   history_id,
                 }),
                 "priority":       priority,
-                "triggered_by":   "tier2_large_jump" if any(abs(d) > 1 for _, _, _, d, _ in urgent_changes) else "tier2_red_purple",
+                "triggered_by":   triggered_by,
                 "created_at":     now,
             }
             supabase.table("review_queue").insert(review_row).execute()
-            print(f"  [!] Added to review_queue (priority={priority}) - {len(urgent_changes)} large/critical change(s)")
+            print(f"  [!] Added to review_queue (priority={priority}, triggered_by={triggered_by})")
         except Exception as e:
             print(f"  [!] review_queue insert failed: {e}")
 
@@ -608,53 +776,85 @@ def run_country_daily(country_name, iso_code, layers):
             print(f"  [!] Baseline is pending owner review - running anyway (scores visible on dashboard)")
 
         # Load current scores (most recent score_history entry)
-        current = get_latest_score(country_id, layer)
+        current        = get_latest_score(country_id, layer)
         current_scores = current["scores"] if current else baseline["scores"]
 
         nsc_level = nsc_data.get(country_name, {}).get("level") if layer == "jewish_israeli" else None
 
+        # Temporal checks before scoring
+        expired_cats          = get_expired_event_elevations(country_id, layer)
+        pending_deescalations = get_pending_deescalations(country_id, layer)
+
+        # Apply expiry resets to current_scores before passing to prompt
+        # (so the model sees the reset baseline, not the expired elevated score)
+        baseline_scores = baseline.get("scores", {})
+        effective_current = dict(current_scores)
+        for cat in expired_cats:
+            effective_current[cat] = baseline_scores.get(cat, "GREEN")
+
         # Build and send prompt
         prompt = build_change_detection_prompt(
-            country_name   = country_name,
-            identity_layer = layer,
-            baseline       = baseline,
-            current_scores = current_scores,
-            headlines      = headlines,
-            nsc_level      = nsc_level,
+            country_name          = country_name,
+            identity_layer        = layer,
+            baseline              = baseline,
+            current_scores        = effective_current,
+            headlines             = headlines,
+            nsc_level             = nsc_level,
+            expired_cats          = expired_cats,
+            pending_deescalations = pending_deescalations,
         )
 
-        print(f"  [>] Calling Gemini 2.5 Flash (+ Google Search)...")
-        try:
-            # Google Search Grounding: gives Gemini live web access to verify and
-            # supplement the ingested headlines with current information.
-            response = gemini.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=prompt,
-                config=genai.types.GenerateContentConfig(
-                    tools=[genai.types.Tool(google_search=genai.types.GoogleSearch())],
-                    temperature=0.0,
-                )
-            )
-            text = response.text.strip()
+        import time as _time
+        MODELS = ["gemini-2.5-flash", "gemini-1.5-flash"]
+        analysis = None
 
-            # Strip markdown fences
-            if text.startswith("```json"): text = text[7:]
-            if text.startswith("```"):     text = text[3:]
-            if text.endswith("```"):       text = text[:-3]
-            text = text.strip()
+        for attempt in range(1, 4):
+            for model_name in MODELS:
+                print(f"  [>] Calling {model_name} (attempt {attempt})...")
+                try:
+                    response = gemini.models.generate_content(
+                        model=model_name,
+                        contents=prompt,
+                        config=genai.types.GenerateContentConfig(
+                            tools=[genai.types.Tool(google_search=genai.types.GoogleSearch())],
+                            temperature=0.0,
+                        )
+                    )
+                    text = response.text.strip()
 
-            analysis = json.loads(text)
-            print(f"  [OK] Change detection complete")
+                    # Strip markdown fences
+                    if text.startswith("```json"): text = text[7:]
+                    if text.startswith("```"):     text = text[3:]
+                    if text.endswith("```"):       text = text[:-3]
+                    text = text.strip()
 
-        except json.JSONDecodeError as e:
-            print(f"  [X] JSON parse failed: {e}")
-            continue
-        except Exception as e:
-            print(f"  [X] Gemini call failed: {e}")
+                    import re
+                    text = re.sub(r",\s*([}\]])", r"\1", text)
+                    analysis = json.loads(text)
+                    print(f"  [OK] Change detection complete [{model_name}]")
+                    break
+                except json.JSONDecodeError as e:
+                    print(f"  [!] JSON parse failed on {model_name}: {e}")
+                except Exception as e:
+                    print(f"  [!] {model_name} failed (attempt {attempt}): {str(e)[:80]}")
+
+            if analysis:
+                break
+            wait = attempt * 30
+            print(f"  [!] All models failed — waiting {wait}s before retry {attempt+1}/3...")
+            _time.sleep(wait)
+
+        if not analysis:
+            print(f"  [X] Change detection failed after 3 attempts — skipping")
             continue
 
         # Store results
-        history_id = store_tier2_result(country_id, country_name, layer, baseline, analysis)
+        history_id = store_tier2_result(
+            country_id, country_name, layer, baseline, analysis,
+            expired_cats=expired_cats,
+            pending_deescalations=pending_deescalations,
+            current_scores=effective_current,
+        )
 
         # Print summary
         cats = analysis.get("categories", {})

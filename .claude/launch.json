@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Flask Admin Backend",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["admin.py"],
+      "port": 5000
+    },
+    {
+      "name": "Dashboard (static preview)",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8080", "--directory", "C:\\Applications\\TravintAI"],
+      "port": 8080
+    }
+  ]
+}
