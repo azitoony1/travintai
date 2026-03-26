@@ -675,6 +675,42 @@ without being robbed, and get from A to B?" If yes → not PURPLE.
 
 SCORING SCALE AND DEFINITIONS:
 
+FUNDAMENTAL PRINCIPLE — TRAVELER'S-EYE VIEW:
+Every score reflects what a visitor physically present inside this country will encounter.
+This is NOT a geopolitical assessment. We do not care what a country does abroad, what
+alliances it holds, what conflicts it supports, or what its foreign policy is — UNLESS
+those things directly create risk for someone standing on its soil.
+
+  Iran sponsors Hezbollah in Lebanon → irrelevant to Iran's terrorism score.
+  Russia invades Ukraine → irrelevant to Russia's armed_conflict score (no fighting in Moscow).
+  Saudi Arabia funds Wahhabi groups abroad → irrelevant unless those groups attack inside Saudi.
+  USA conducts airstrikes in Syria → irrelevant to USA's armed_conflict score.
+  Israel fights Hezbollah in Lebanon → that's Lebanon's armed_conflict, not Israel's regional score.
+
+The ONLY question for each category: what does a traveler inside this country experience?
+
+CRITICAL PRINCIPLE — SCORE EACH CATEGORY INDEPENDENTLY:
+Each of the 7 categories has its own specific definition. Do NOT let one high-scoring
+category "contaminate" others. A country can be armed_conflict RED and terrorism YELLOW
+(the war is the risk, not non-state terrorist groups). It can be civil_strife GREEN and
+armed_conflict RED (the government is functioning well while fighting an external war).
+Evaluate each category on its own indicators. Do not reason "this country is dangerous
+overall, so all categories must be high."
+
+WRONG: "Iran is at war and sponsors terrorism, therefore terrorism = PURPLE."
+RIGHT: "What organised non-state groups are conducting attacks on civilians inside Iran?
+        The IS Kerman shrine attack (2024) and Ahvaz attack (2018) demonstrate capability.
+        Iran terrorism = ORANGE (organised group, intermittent attacks, not weekly)."
+
+WRONG: "Ukraine is in a war zone, so civil_strife must be RED or PURPLE."
+RIGHT: "Ukraine's internal political situation: strong democratic government, high civilian
+        support for war effort, no political repression of own citizens. Civil_strife = GREEN."
+
+WRONG: "Russia's missiles hit Ukraine = Ukraine terrorism PURPLE."
+RIGHT: "State military attacks between countries = armed_conflict. Terrorism requires
+        non-state actors. Ukraine terrorism score is based on what non-state groups are
+        doing to civilians inside Ukraine — likely ORANGE at most."
+
 CRITICAL PRINCIPLE — ARMED CONFLICT:
 Score what travelers PHYSICALLY ENCOUNTER on the ground, NOT the country's
 political or military involvement in a conflict.
@@ -717,66 +753,161 @@ ARMED CONFLICT — Score based on conflict ON THE COUNTRY'S TERRITORY or directl
   NOTE: Being the aggressor/initiator of a war fought on another country's soil = YELLOW.
   NOTE: Active war + functioning state + civil defense + open airport = RED, not PURPLE.
 
-REGIONAL INSTABILITY — Score based on how much neighboring/regional conflicts affect THIS country.
-  GREEN:  Stable neighborhood. No meaningful spillover risk.
-  YELLOW: Some regional tensions. Low direct spillover risk.
-  ORANGE: Active regional conflict with documented spillover (refugees, cross-border incidents).
-  RED:    Direct threat from regional conflict. Missile/attack risk from neighbors.
-          Borders under pressure. Meaningful chance of being drawn into conflict.
-  PURPLE: Country is a direct participant or frontline state in a regional war.
+REGIONAL INSTABILITY — Score the impact of NEIGHBORING conflicts on travelers INSIDE this country.
+  The question is: does the regional situation create measurable risk for someone visiting HERE?
+  Being geographically near a conflict does NOT automatically raise this score — show the
+  actual traveler-affecting mechanism (cross-border fire, refugee-driven security pressure,
+  economic collapse from sanctions/blockade, etc.).
 
-TERRORISM — Score based on active terrorist threat to travelers.
-  GREEN:  No credible threat. No significant attacks in 5+ years. No active organised groups.
-  YELLOW: Low-level threat. Foiled plots or minor incidents only. No fatalities in 3+ years.
-          OR a single isolated incident with no evidence of repeat capability.
-  ORANGE: Credible active threat. An organised group with demonstrated capability exists.
-          1-2 attacks with casualties (1-4 deaths each) in past 2 years. OR a single
-          major lone-wolf attack (even with many deaths) with NO evidence of organised
-          group or repeat threat — treat as ORANGE until further attacks occur.
-  RED:    Active organised campaign. Multiple attacks in past 2 years with deaths. OR
-          3+ attacks (any scale, including foiled) in past 12 months by an identified group
-          with stated intent to continue. OR persistent monthly incidents (even if low
-          casualty) by an active group. OR systematic targeting of a specific ethnic/
-          national group in multiple separate incidents by organised actors.
-          KEY: RED requires evidence of an organised group with proven capability AND
-          ongoing motivation — a single lone-wolf attack does NOT automatically = RED,
-          even if it killed 6+ people.
-  PURPLE: Extreme, sustained campaign. Weekly or near-weekly attacks of any scale by
-          organised actors. OR 3+ attacks with multiple deaths (2+) each in the past year.
-          OR terrorism is integral to an active war (attacks are part of military campaign).
-          PURPLE is the superlative of RED — it requires both frequency AND evidence of
-          sustained organised capability, not just a single catastrophic event.
-  NOTE: Frequency + organised group = key discriminators. Scale alone is not sufficient.
+  GREEN:  Stable neighborhood. No active wars in bordering countries with spillover.
+          OR the country is geographically distant from regional flashpoints.
+  YELLOW: Regional tensions or a low-level conflict nearby. Some diplomatic tensions
+          or refugee flows, but no security impact on travelers inside this country.
+  ORANGE: Active conflict in a neighboring country with documented spillover INTO this country:
+          significant refugee pressure affecting local security, cross-border armed incidents
+          (even if contained), supply chain disruption affecting traveler safety, or economic
+          crisis traceable to regional conflict.
+  RED:    Direct kinetic threat crossing the border. Missiles or drone strikes originating
+          from neighbors hitting this country's territory. Armed groups crossing the border
+          and operating inside this country. Country actively supporting a warring party and
+          facing documented retaliatory strikes on its own territory.
+  PURPLE: Country IS the regional conflict — it is a direct military participant, a frontline
+          state where fighting originating regionally is now indistinguishable from internal
+          armed conflict. At this level, regional_instability and armed_conflict overlap.
 
-CIVIL STRIFE — Score based on political violence affecting travelers.
-  GREEN:  Stable. Protests are peaceful and rare.
-  YELLOW: Occasional protests. No significant violence. Travelers easily avoid.
-  ORANGE: Sustained protests with violence. Some parts of cities unsafe. Travel precautions needed.
-  RED:    Widespread unrest. Riots, political violence. Significant parts of country unstable.
-  PURPLE: Coup, civil war, or collapse of public order. Do not travel.
+  CALIBRATION: Poland (March 2026): RED (Russian missiles occasionally enter Polish airspace,
+  economic disruption, NATO-heightened posture, refugee pressure) but NOT PURPLE (no actual
+  combat on Polish territory). Jordan: ORANGE (regional pressure from Syria/Iraq historically,
+  some cross-border incidents) but NOT RED (no direct attacks on Jordanian territory).
+  Saudi Arabia: RED (Houthi missiles regularly targeting Saudi cities = direct kinetic threat).
 
-CRIME — Score based on crime rates affecting travelers specifically.
-  GREEN:  Low crime. Safe for travelers with normal precautions. Petty theft possible.
-  YELLOW: Moderate crime. Pickpocketing in tourist areas. Standard urban awareness. Rare
-          violent incidents. Travelers are not a specific target.
-  ORANGE: Elevated crime. Robbery, assault, vehicle theft possible. Avoid certain areas.
-          Kidnapping risk limited to specific provinces. Heightened precautions needed.
-  RED:    High crime. Documented kidnapping-for-ransom targeting foreigners. Violent crime
-          common. Criminal gangs active. Significant precautions required.
-  PURPLE: Criminal organisations exercise SUBSTANTIAL territorial control over multiple
-          states, provinces, or large regions — state has effectively ceded governance of
-          significant territory. Travelers face systemic risk throughout those regions.
-          NOTE: A criminal gang controlling a neighbourhood, or cartel activity in one
-          city, does NOT = PURPLE. Substantial means entire regions/states where the
-          state cannot operate. (Examples: parts of DRC, certain Mexican states.
-          The USA overall is NOT PURPLE even with gang violence in specific cities.)
+TERRORISM — Score based on organised non-state actors attacking civilians INSIDE this country.
+  The question is: will a traveler be targeted by a terrorist group while visiting?
 
-HEALTH — Score based on disease risk and healthcare access for travelers.
-  GREEN:  Good healthcare. Standard vaccinations sufficient. No significant disease risk.
-  YELLOW: Adequate healthcare in cities. Some rural limitations. Minor disease considerations.
-  ORANGE: Limited healthcare outside major cities. Some disease risk (malaria, dengue, etc.).
-  RED:    Poor healthcare infrastructure. Active disease outbreaks. Medical evacuation likely needed.
-  PURPLE: Healthcare system collapsed. Epidemic/pandemic conditions. Extreme medical risk.
+  WHAT COUNTS AS TERRORISM (for this score):
+    - Non-state actors (IS, Al-Qaeda, Boko Haram, ETA-type groups, etc.) conducting attacks
+      on civilians or civilian infrastructure inside the country.
+    - Politically-motivated violence by non-state groups against the civilian population,
+      including foreign travelers.
+
+  WHAT DOES NOT COUNT AS TERRORISM (do NOT score here — use armed_conflict instead):
+    - Military strikes between states: missiles, airstrikes, drone attacks by one country
+      against another are ARMED CONFLICT, not terrorism. Score them under armed_conflict.
+    - A country being a "state sponsor of terrorism" abroad does NOT raise its terrorism
+      score. Iran sponsoring Hezbollah in Lebanon is not terrorism against visitors in Tehran.
+    - Wartime framing: one side calling the other's military operations "terrorism" is
+      irrelevant. Score what organised non-state groups are doing to civilians inside
+      the country's borders.
+    - Proxy groups operating in OTHER countries on behalf of this government: score in
+      those countries' terrorism scores, not here.
+
+  CALIBRATION EXAMPLES:
+    Ukraine (March 2026): Russia's missile strikes = armed_conflict. IS/Salafi groups in
+      Ukraine? No sustained presence. Terrorism = YELLOW or ORANGE at most.
+    Iran (March 2026): IRGC operations abroad = not terrorism inside Iran. IS has attacked
+      Iranian targets (Ahvaz 2018, Kerman 2024 shrine attack). Score based on those
+      incidents. Iran terrorism ≠ PURPLE. Likely ORANGE (organised IS capability demonstrated
+      inside Iran, intermittent attacks, but not a sustained campaign against visitors).
+    Nigeria: Boko Haram/ISWAP conduct weekly attacks in NE. = PURPLE in NE; RED nationally.
+    France: IS-inspired lone-wolf and cell attacks; multiple incidents in recent years. = RED.
+    Netherlands: 2024 Amsterdam anti-Israeli attacks = lone-wolf hate crime, not IS campaign.
+
+  GREEN:  No credible non-state threat. No attacks with fatalities in 5+ years.
+          No organised groups with stated intent to attack inside the country.
+  YELLOW: Very low threat. Only foiled plots, OR a single isolated lone-wolf attack with
+          no organised group behind it and no further attacks. Lone-wolf = YELLOW until
+          a repeat pattern or organised group is confirmed.
+  ORANGE: A credible organised non-state group exists with demonstrated attack capability
+          inside the country. 1-2 attacks with 1-4 deaths each in past 2 years.
+          OR a single high-casualty lone-wolf attack with no organised group — ORANGE until
+          repeat pattern establishes ongoing threat.
+  RED:    Active organised non-state campaign. Requires BOTH:
+          (a) identified organised group with stated/demonstrated ongoing intent, AND
+          (b) multiple attacks in past 2 years with deaths, OR 3+ attacks in past 12 months,
+              OR persistent monthly incidents.
+          OR systematic targeting of a specific ethnic/national group across multiple
+          separate incidents by organised actors.
+          KEY: A single lone-wolf attack does NOT = RED even if 6+ died. Organised group
+          with repeat capability required.
+  PURPLE: Sustained high-frequency organised campaign. Weekly or near-weekly attacks by
+          organised non-state actors inside the country. OR 3+ attacks with 2+ deaths each
+          in the past year by the same or affiliated group.
+          PURPLE is the superlative of RED. Requires frequency AND organised capability.
+          Do NOT apply PURPLE because a country is at war or sponsors terrorism abroad.
+  NOTE: State military operations between countries = armed_conflict, never terrorism here.
+
+CIVIL STRIFE — Score based on internal political violence, repression, and unrest affecting travelers.
+  This covers: protests, riots, coups, government crackdowns, authoritarian legal risk.
+  It does NOT cover: war (armed_conflict), terrorism by non-state groups (terrorism),
+  or criminal violence (crime). Do not double-count.
+
+  WHAT COUNTS (indicators per level):
+  GREEN:  Politically stable. Protests are rare and peaceful. No significant unrest.
+          Government transitions follow established rules.
+  YELLOW: Occasional protests or political tensions. Demonstrations are peaceful or quickly
+          dispersed. No significant violence. Travelers can easily avoid.
+  ORANGE: Sustained protests with episodes of violence. Tear gas, water cannons, periodic
+          arrests. Some city areas periodically unsafe. Traveler needs active precautions.
+          OR: authoritarian enforcement of laws that criminalise ordinary traveler behaviour:
+          mandatory dress codes with police enforcement, strict photography laws, blasphemy
+          laws enforced against foreigners, social media monitoring.
+  RED:    Widespread unrest or sustained political violence affecting major cities. Government
+          using lethal force against protesters. OR pattern of detaining/arresting foreigners
+          for political reasons (journalists, activists, or random foreigners as bargaining chips).
+          OR significant breakdown of rule of law in parts of the country.
+  PURPLE: Coup, active civil war component, or complete collapse of public order. Government
+          has lost control of significant territory to competing political factions (not just
+          armed groups — this overlaps with armed_conflict when it reaches that stage).
+          Emergency laws suspending civil rights nationwide.
+
+  IMPORTANT: Wartime legal measures (curfews, martial law in conflict zones, military
+  checkpoints) are armed_conflict factors, NOT civil_strife. Do not score a country's
+  civil_strife higher simply because it is at war. Ukraine's civil_strife may be GREEN
+  (strong democratic government, high public support for war effort, no internal repression
+  of civilians) even while armed_conflict is RED. Score each independently.
+
+CRIME — Score criminal risk to travelers specifically. Anchor on homicide rate + kidnap risk.
+  Score what a traveler in tourist/business areas would realistically encounter.
+  Do NOT conflate with terrorism (political violence) or civil strife (political unrest).
+
+  Indicators:
+  GREEN:  Under 5 homicides/100k/year. Petty theft possible in tourist areas but violent
+          crime against travelers rare. No kidnap risk. Normal urban precautions sufficient.
+  YELLOW: 5-15 homicides/100k/year. Pickpocketing common in tourist areas. Opportunistic
+          crime possible. Violent crime against travelers uncommon. Standard awareness needed.
+  ORANGE: 15-30 homicides/100k/year. OR documented kidnapping in specific provinces (not
+          whole country). Robbery and assault realistic risks. Certain areas/times to avoid.
+  RED:    30-60 homicides/100k/year. OR documented kidnapping-for-ransom specifically
+          targeting foreign nationals. OR criminal gangs controlling traveler routes or
+          tourist-adjacent areas. Serious precautions and security planning required.
+  PURPLE: Over 60 homicides/100k/year. OR criminal organisations exercise SUBSTANTIAL
+          territorial control over MULTIPLE states or large provinces — state has effectively
+          ceded governance of significant geography. Travelers face systemic inescapable risk.
+          NOT PURPLE: gang presence in city neighbourhoods; cartel active in one city;
+          high crime rate with functioning state. USA is NOT PURPLE. Mexico nationally is RED
+          (despite PURPLE-level states in the north); score per regional breakdown.
+
+HEALTH — Score based on traveler's ability to access safe medical care and avoid serious disease.
+  Score what a traveler in a MAJOR CITY would experience — not worst-case rural areas.
+
+  GREEN:  High-income country with fully functional hospitals. Standard vaccinations sufficient.
+          No active disease outbreaks. Medical care of reliable quality. (EU, USA, Australia,
+          Japan, Israel = GREEN.)
+  YELLOW: Adequate healthcare in major cities. Some rural limitations. Minor endemic disease
+          considerations (traveler's diarrhoea, low-level vector-borne risk in rural areas).
+          Travel health insurance advisable. Emergency care accessible in cities.
+  ORANGE: Limited or variable healthcare outside major cities. Active endemic diseases requiring
+          prophylaxis (malaria, dengue, cholera in specific regions). Medical evacuation insurance
+          strongly recommended. Serious illness may require evacuation.
+  RED:    Poor healthcare infrastructure even in major cities. Standard surgical care not reliably
+          available or safe. Active epidemic or disease outbreak affecting travelers. Medical
+          evacuation very likely needed for any serious illness.
+  PURPLE: Healthcare system has PHYSICALLY COLLAPSED — hospitals bombed, closed, or completely
+          non-functional in major cities. No emergency care available anywhere.
+          NOT PURPLE: under-funded, sanctions-strained, understaffed, or strained by war casualties
+          if hospitals are OPEN and TREATING patients = RED at most.
+          Examples of true PURPLE: Yemen 2023 (hospitals bombed/non-functional), Gaza 2024,
+          Syria 2015-2019. Iran with sanctions = ORANGE. Nigeria with poor but open hospitals = RED.
 
 INFRASTRUCTURE — Score based on the PHYSICAL STATE of roads, power, water, and transport.
   GREEN:  Modern, reliable infrastructure. Safe roads, reliable power/water/internet.
@@ -802,25 +933,26 @@ reporting 14.8 homicides/100k with poor reporting systems may be effectively ORA
 A country at 31/100k with well-documented data and good enforcement may trend toward
 RED but warrant MEDIUM confidence. Confidence levels matter as much as the scores.
 
-TERRORISM thresholds:
-  GREEN:  0 attacks with fatalities in past 5 years. No credible active groups operating.
-  YELLOW: 0-1 deaths from terrorism in past 3 years. Foiled plots only. OR a single
-          isolated lone-wolf attack with no evidence of organised group behind it and
-          no further attacks since. Lone-wolf = YELLOW until repeat pattern emerges.
-  ORANGE: Organised group with demonstrated attack capability exists in the country.
-          1-2 attacks with 1-4 deaths each in past 2 years by an organised actor.
-          A lone-wolf attack with high death count (even 6+) but NO organised group
-          = ORANGE, not RED. Do not score RED for a lone-wolf incident alone.
-  RED:    Active organised campaign with documented repeat intent. Requires BOTH:
-          (a) an identified organised group with stated/demonstrated ongoing intent, AND
-          (b) multiple attacks in past 2 years (2+) with deaths, OR 3+ attacks in past
-          12 months by the same or affiliated group, OR persistent monthly incidents.
-          Systematic targeting of a specific ethnic/national group in multiple incidents
-          by organised actors also = RED.
-  PURPLE: Sustained high-frequency organised campaign: weekly/near-weekly attacks of any
-          scale by organised actors. OR 3+ attacks each with 2+ deaths in the past year
-          by organised groups. OR terrorism is integral to an active war (military campaign).
-          PURPLE = superlative of RED. Both frequency AND organised capability required.
+TERRORISM thresholds (attacks by non-state actors inside the country against civilians):
+  CRITICAL: Do NOT score military strikes between states here. Missiles, airstrikes,
+  and drone attacks between state militaries = armed_conflict. "State sponsor of
+  terrorism" status does NOT raise a country's terrorism score. Score only what
+  organised non-state groups are doing INSIDE this country to civilians.
+
+  GREEN:  0 attacks with fatalities in past 5 years. No credible active non-state groups.
+  YELLOW: 0-1 deaths from non-state actor terrorism in past 3 years. OR a single
+          isolated lone-wolf attack with no organised group. No repeat pattern.
+  ORANGE: Organised non-state group with demonstrated attack capability inside the country.
+          1-2 attacks with 1-4 deaths each in past 2 years. OR a single high-casualty
+          lone-wolf attack with NO organised group — ORANGE until pattern emerges.
+  RED:    Active organised non-state campaign: identified group + multiple attacks in past
+          2 years with deaths, OR 3+ attacks in past 12 months, OR persistent monthly
+          incidents. Lone-wolf attacks alone do NOT reach RED.
+  PURPLE: Sustained weekly/near-weekly attacks by organised non-state actors inside the
+          country. OR 3+ attacks with 2+ deaths each in past year by same group.
+          Do NOT apply because country is at war or sponsors terrorism abroad.
+          Nigeria NE (Boko Haram), Mali (JNIM) = PURPLE examples.
+          Ukraine, Iran, Saudi Arabia = NOT PURPLE on this criterion.
 
 ARMED CONFLICT thresholds:
   GREEN:  No fighting on national territory.
