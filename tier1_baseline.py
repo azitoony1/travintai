@@ -804,9 +804,10 @@ If there is an active war or major conflict, describe it clearly — do not soft
 This briefing will be used to assign threat scores. Accuracy is critical."""
 
     # Models tried in order — 2.5 Flash preferred (best quality + search grounding)
-    # 1.5 Flash is the stable fallback (also supports search grounding, less demand)
-    STEP1_MODELS = ["gemini-2.5-flash", "gemini-1.5-flash"]
-    STEP2_MODELS = ["gemini-2.5-flash", "gemini-1.5-flash"]
+    # 2.0 Flash is the stable fallback (also supports search grounding, less demand)
+    # Note: gemini-1.5-flash is deprecated (404 NOT_FOUND as of 2026-03)
+    STEP1_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash"]
+    STEP2_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash"]
 
     import time as _time
 
