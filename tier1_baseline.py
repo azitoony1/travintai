@@ -793,8 +793,8 @@ Write a factual intelligence briefing covering:
 1. ARMED CONFLICT: Any active wars, military operations, airstrikes, territorial conflicts?
 2. REGIONAL INSTABILITY: Neighboring conflicts with spillover? Geopolitical tensions?
 3. TERRORISM: Active groups, recent attacks, threat level?
-4. CIVIL STRIFE: Political violence, coups, riots, sustained protests, breakdown of public order?
-5. LEGAL RISK: Arbitrary detention of foreigners, criminalization of traveler behavior, consular access issues?
+4. CIVIL STRIFE: Political violence, coups, riots, sustained protests, breakdown of public order? (NOT legal system issues — those go in #5)
+5. LEGAL RISK: What does the STATE do to foreign travelers who are legally inside the country? Arbitrary detention of foreigners (NOT border entry bans), criminalization of tourist behavior, consular access obstruction, documented use of foreigners as diplomatic bargaining chips? NOTE: wartime military measures (curfews, checkpoints, military zones, conscription of dual nationals) are armed_conflict factors — do NOT include them here. Entry bans for certain nationalities are border policy, not in-country legal risk.
 6. CRIME: Organized crime, kidnapping, violent crime rates for travelers?
 7. HEALTH: Disease outbreaks, healthcare quality, medical access?
 8. INFRASTRUCTURE: Road safety, power/water reliability, transport quality?
@@ -803,11 +803,13 @@ Be specific: name actual groups, cite specific incidents with dates, give statis
 If there is an active war or major conflict, describe it clearly — do not soften it.
 This briefing will be used to assign threat scores. Accuracy is critical."""
 
-    # Models tried in order — 2.5 Flash preferred (best quality + search grounding)
-    # 2.0 Flash is the stable fallback (also supports search grounding, less demand)
-    # Note: gemini-1.5-flash is deprecated (404 NOT_FOUND as of 2026-03)
+    # Step 1 (briefing with Google Search grounding): 2.5 Flash confirmed to support grounding.
+    # 3.x preview models may not support search grounding — keep 2.x for Step 1.
+    # Step 2 (JSON scoring, no search): try 3.1 Pro Preview first for better reasoning quality,
+    # fall back to 2.5 Flash, then 2.0 Flash.
+    # Note: gemini-1.5-flash is deprecated (404 NOT_FOUND as of 2026-03).
     STEP1_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash"]
-    STEP2_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash"]
+    STEP2_MODELS = ["gemini-3.1-pro-preview", "gemini-2.5-flash", "gemini-2.0-flash"]
 
     import time as _time
 
@@ -1119,88 +1121,105 @@ TERRORISM — Score based on organised non-state actors attacking civilians INSI
         areas meets the "not exclusively military" requirement (e.g., if the group occasionally
         car-bombs cities alongside military operations).
 
-GOVERNANCE & LEGAL CLIMATE [DB field: civil_strife] — Score based on internal political
-  violence, repression, unrest, and legal environment affecting travelers.
-  This covers: protests, riots, coups, government crackdowns, authoritarian legal risk,
-  AND state-sponsored legal persecution of travelers or groups (criminalization of identity,
-  systematic detention of foreigners, laws that directly threaten travelers' freedom).
+GOVERNANCE & LEGAL CLIMATE [DB field: civil_strife] — Score internal political violence,
+  mass unrest, and governmental collapse affecting travelers' physical safety.
+  This covers ONLY: protests, riots, coups, government crackdowns involving violence,
+  political violence between factions, and collapse of public order.
   It does NOT cover: war (armed_conflict), terrorism by non-state groups (terrorism),
-  or criminal violence (crime). Do not double-count.
+  criminal violence (crime), OR state legal persecution of travelers (legal_risk).
+  Legal persecution, arbitrary detention, and criminalization of traveler behavior belong
+  in legal_risk — do NOT score them here. Do not double-count across categories.
 
-  NOTE: "Civil strife" in the traditional sense (protests, riots) is only ONE dimension
-  of this category. A country with zero protests and a stable authoritarian government
-  can still score RED here if the state systematically detains foreigners or criminalizes
-  certain behaviors that travelers may exhibit. A country does NOT need to have active
-  unrest to score above GREEN in this category.
-
-  WHAT COUNTS (indicators per level):
   GREEN:  Politically stable. Protests are rare and peaceful. Government transitions follow
-          established rules. No laws that create meaningful legal risk for ordinary travelers.
-          Authorities are not known to target foreigners arbitrarily.
-  YELLOW: Occasional protests or political tensions. Demonstrations peaceful or quickly
-          dispersed. No significant violence. OR government is conservative/restrictive but
-          applies laws predictably and enforcement against foreign tourists is rare.
+          established rules. No political violence.
+  YELLOW: Occasional protests or political tensions. Demonstrations are peaceful or quickly
+          dispersed. No significant violence between political actors or between state and citizens.
   ORANGE: Sustained protests with episodes of violence. Tear gas, water cannons, periodic
-          arrests. Some city areas periodically unsafe.
-          OR: authoritarian enforcement of laws that criminalise ordinary traveler behaviour:
-          mandatory dress codes with police enforcement, strict photography laws, blasphemy
-          laws enforced against foreigners, social media monitoring with real consequences.
-          OR: state systematically imposes legal risk on travelers from certain countries
-          or with certain characteristics (requires documentation of actual pattern).
+          arrests of protesters. Some city areas periodically unsafe due to civil unrest.
+          OR: political situation is tense with documented risk of rapid deterioration
+          (e.g. contested elections, recent coup attempt, factional violence in recent months).
   RED:    Widespread unrest or sustained political violence affecting major cities. Government
-          using lethal force against protesters.
-          OR: pattern of detaining or arresting foreigners for political reasons — journalists,
-          activists, or random foreigners used as bargaining chips or detained on fabricated charges.
-          OR: state criminalizes traveler identity in a way that creates genuine legal jeopardy
-          (e.g. same-sex relations leading to imprisonment with active enforcement; certain
-          nationalities subject to mandatory interrogation and risk of detention).
-          OR: significant breakdown of rule of law in parts of the country.
-  PURPLE: Coup, active civil war component, or complete collapse of public order. Government
-          has lost control of significant territory to competing political factions.
-          OR: state systematically targets a category of travelers with violence or indefinite
-          detention and no consular protection is available.
-          Emergency laws suspending civil rights nationwide with violent enforcement.
+          using lethal force against civilian protesters (not armed combatants — those are
+          armed_conflict). OR: significant breakdown of public order in parts of the country
+          due to political conflict, such that travelers face risk from the chaos itself.
+  PURPLE: Coup, active civil war at the political/governance level, or complete collapse of
+          public order. Government has lost control of significant urban territory to competing
+          political factions. Emergency laws suspending civil rights with violent nationwide
+          enforcement against the civilian population.
 
   IMPORTANT: Wartime legal measures (curfews, martial law in conflict zones, military
   checkpoints) are armed_conflict factors, NOT civil_strife. Do not score a country's
   civil_strife higher simply because it is at war. Ukraine's civil_strife may be GREEN
   (strong democratic government, high public support for war effort, no internal repression
-  of civilians) even while armed_conflict is RED. Score each independently.
+  of civilians) even while armed_conflict is PURPLE. Score each category independently.
 
 LEGAL RISK [DB field: legal_risk] — Score the legal and institutional threat the STATE
-  poses to travelers directly: criminalization of behaviors, arbitrary detention, compelled
-  compliance, denial of legal rights. This is NOT about civil unrest — a country can be
-  entirely stable (no protests, no riots) and still score RED here if the state systematically
-  detains foreigners or criminalizes ordinary traveler behavior.
+  poses to travelers who are INSIDE the country: criminalization of behaviors, arbitrary
+  detention, compelled compliance, denial of legal rights.
   Distinct from civil_strife (which covers unrest, riots, political violence by the population)
   and crime (which covers non-state criminal actors).
+
+  SCOPE — what this category covers and does NOT cover:
+  COVERS: Laws actively enforced against foreign visitors, documented arbitrary detention of
+          travelers, state use of foreigners as political bargaining chips, criminalization of
+          identity or behavior with real enforcement against tourists.
+  DOES NOT COVER:
+    — Entry bans or visa restrictions: a country that refuses entry to certain nationalities
+      is exercising border control, not creating legal risk for travelers who are inside.
+      Score legal_risk based on what happens AFTER a traveler legally enters.
+    — War-related emergency measures: military curfews, checkpoints, restricted military zones,
+      conscription of dual nationals — these are armed_conflict factors, NOT legal_risk.
+      A country at war may still score GREEN or YELLOW on legal_risk if its legal system
+      treats foreign visitors normally. Do not raise legal_risk because a country is at war.
+    — Laws that exist on the books but are never or rarely enforced against tourists.
+      Score demonstrated enforcement patterns, not theoretical legal exposure.
+
+  CALIBRATION EXAMPLES:
+    GREEN:  Israel (general travelers — functional rule of law, consular access guaranteed,
+            foreign tourists not subject to wartime conscription or arbitrary detention),
+            Netherlands, France, UK, Australia, Japan.
+    YELLOW: China (photography rules, internet censorship, some bureaucratic friction; tourists
+            rarely detained), UAE (alcohol/dress rules exist but tourist tolerance is high).
+    ORANGE: Saudi Arabia (strict behavior enforcement for all visitors, dress codes, content
+            restrictions actively applied), Turkey (journalists/activists at risk; ordinary
+            tourists generally safe but some laws enforced selectively against foreigners).
+    RED:    Russia (Westerners detained as diplomatic bargaining chips — Evan Gershkovich case;
+            documented pattern), Iran (dual nationals targeted for arrest; hostage diplomacy
+            with Western governments; foreigners face real detention risk).
+    PURPLE: North Korea (total state control, no meaningful consular protection, travelers under
+            constant state surveillance with near-certain legal jeopardy). Reserved for states
+            where entry itself creates near-certain legal jeopardy for ordinary travelers.
 
   GREEN:  Strong rule of law protecting travelers. No documented pattern of arbitrary detention
           of foreigners. State does not criminalize ordinary traveler behavior. Travelers'
           legal rights respected and consular access guaranteed without obstruction.
+          Examples: EU countries, USA, Israel, Australia, Japan, UK.
 
-  YELLOW: Generally functional legal protections. Some laws that could theoretically apply to
-          travelers (photography restrictions, alcohol rules, dress expectations) but rarely
-          if ever enforced against foreign tourists. Minor bureaucratic friction possible.
-          Consular access functional.
+  YELLOW: Generally functional legal protections. Some laws could theoretically apply to
+          travelers (photography restrictions, alcohol rules, dress expectations) but are
+          rarely if ever enforced against foreign tourists. Minor bureaucratic friction.
+          Consular access functional. Travelers with no local political profile face no
+          meaningful legal jeopardy.
 
   ORANGE: Laws that could meaningfully affect travelers are actively enforced against foreigners.
           Mandatory behavioral requirements (dress codes, conduct laws, content restrictions)
           with documented enforcement against tourists. State has detained foreigners briefly
-          for minor infractions. Travelers must actively comply with specific local laws.
-          Consular access sometimes delayed or complicated.
+          for minor infractions. Travelers must actively comply with specific local laws to
+          avoid legal exposure. Consular access sometimes delayed or complicated.
 
   RED:    Documented pattern of arbitrary detention of foreign nationals, including for
-          political reasons or as diplomatic leverage. Risk of arrest for activities that
-          are legal in the traveler's home country is real and documented. State has used
-          foreign nationals as bargaining chips. Consular access not guaranteed. Certain
-          nationalities or identities are specifically targeted by authorities.
+          political reasons or as diplomatic leverage. Risk of arrest for activities legal
+          in the traveler's home country is real and documented. State has used foreign
+          nationals as bargaining chips (not merely a legal risk on paper — actual incidents).
+          Consular access not guaranteed. Certain nationalities or identities specifically
+          targeted by authorities with documented recent cases.
           Note: legal_risk RED forces total score to at least ORANGE (soft floor applies).
 
-  PURPLE: State systematically targets foreign nationals with violence, indefinite detention,
-          or prosecution based on identity or nationality. No reliable consular protection.
-          Travelers face near-certain legal jeopardy upon entry or during stay. The state
-          itself is the primary threat to the traveler.
+  PURPLE: State systematically exposes ordinary foreign travelers to near-certain legal
+          jeopardy. The state itself is the primary threat. No reliable consular protection.
+          Reserved for the most extreme cases — not for countries that are authoritarian
+          toward their own citizens, but for countries where being a foreign traveler
+          itself creates a high probability of detention, prosecution, or harm by the state.
           Note: legal_risk PURPLE forces total score to at least RED (soft floor applies).
 
 CRIME — Score criminal risk to travelers specifically. Anchor on homicide rate + kidnap risk.
@@ -1229,10 +1248,28 @@ CRIME — Score criminal risk to travelers specifically. Anchor on homicide rate
 
 HEALTH — Score based on traveler's ability to access safe medical care and avoid serious disease.
   Score what a traveler in a MAJOR CITY would experience — not worst-case rural areas.
+  Score the PHYSICAL CAPABILITY of the healthcare system, not its workload or stress level.
+
+  CRITICAL WAR-CONTEXT RULE: A hospital treating large numbers of war casualties is STILL
+  A FUNCTIONING HOSPITAL. A health system that is "under strain", "overwhelmed", or "stretched
+  by the conflict" is NOT PURPLE and NOT RED unless it has physically stopped treating patients
+  or collapsed. A traveler who breaks a leg in Tel Aviv, Paris, or Kyiv can still get surgery.
+  Score what a civilian traveler with a medical emergency can access — not the abstract state
+  of the system as a whole.
+
+  CALIBRATION EXAMPLES:
+    GREEN:  Israel (world-class hospitals — Hadassah, Sheba, Sourasky are among the best
+            in the Middle East; open and treating patients even during wartime; foreign
+            travelers receive full care), EU countries, USA, Australia, Japan.
+    ORANGE: Nigeria (hospitals exist but quality is poor and unreliable in many cities),
+            Iran (sanctions-strained but hospitals are open and treating patients).
+    RED:    Yemen 2015-2016 before full collapse (some hospitals open but severely degraded).
+    PURPLE: Yemen 2023 (hospitals bombed, non-functional in major cities), Gaza 2024 (healthcare
+            system physically destroyed), Syria 2015-2019 active bombing of hospitals.
 
   GREEN:  High-income country with fully functional hospitals. Standard vaccinations sufficient.
           No active disease outbreaks. Medical care of reliable quality. (EU, USA, Australia,
-          Japan, Israel = GREEN.)
+          Japan, Israel = GREEN regardless of geopolitical situation.)
   YELLOW: Adequate healthcare in major cities. Some rural limitations. Minor endemic disease
           considerations (traveler's diarrhoea, low-level vector-borne risk in rural areas).
           Travel health insurance advisable. Emergency care accessible in cities.
@@ -1244,29 +1281,60 @@ HEALTH — Score based on traveler's ability to access safe medical care and avo
           evacuation very likely needed for any serious illness.
           Soft floor: health RED -> total at least ORANGE.
   PURPLE: Healthcare system has PHYSICALLY COLLAPSED — hospitals bombed, closed, or completely
-          non-functional in major cities. No emergency care available anywhere.
-          NOT PURPLE: under-funded, sanctions-strained, understaffed, or strained by war casualties
-          if hospitals are OPEN and TREATING patients = RED at most.
-          Examples of true PURPLE: Yemen 2023 (hospitals bombed/non-functional), Gaza 2024,
-          Syria 2015-2019. Iran with sanctions = ORANGE. Nigeria with poor but open hospitals = RED.
+          non-functional in major cities. A traveler with a medical emergency has nowhere to go.
+          PURPLE REQUIRES: hospitals in major cities are non-functional (bombed, closed, out of
+          supplies) AND no alternative emergency care exists. This is an extreme threshold.
+          NOT PURPLE: busy, strained, overwhelmed, underfunded, or treating many war casualties
+          if the hospitals are OPEN and TREATING patients — that is RED at most.
+          NOT PURPLE: a country at war where the capital's hospitals still function normally.
+          Examples of true PURPLE: Yemen 2023, Gaza 2024, Syria 2015-2019 (active bombing of
+          hospital network). Iran = ORANGE. Nigeria = RED. Israel = GREEN.
           Soft floor: health PURPLE -> total at least RED.
 
 INFRASTRUCTURE — Score based on the PHYSICAL STATE of roads, power, water, and transport.
+  Score ONLY physical capability — not security conditions, not missile alerts, not curfews.
+
+  CRITICAL WAR-CONTEXT RULE: Missile alerts, curfews, and security restrictions are
+  armed_conflict factors — they NEVER raise the infrastructure score. A country where
+  roads are drivable, power is on most of the time, water flows, and the internet works
+  in major cities scores YELLOW at most — even if that country is in an active war.
+  Only score higher if you can point to SPECIFIC evidence that the physical systems have
+  been destroyed and are not functioning. "Under attack" is not the same as "collapsed."
+
+  ESCALATION GATE — ask these questions before scoring above YELLOW:
+    Are major city roads physically impassable (not just warned against for security)?  YES/NO
+    Is the power grid failing in major cities (not just intermittent alerts)?           YES/NO
+    Is water supply non-functional in major cities?                                     YES/NO
+    Is internet/communications down in major cities?                                    YES/NO
+  If all four answers are NO → score YELLOW at most, regardless of the war situation.
+  If 1-2 are YES → ORANGE. If 3-4 are YES and affecting major cities → RED.
+  PURPLE requires all four essentially non-functional AND the situation is ongoing.
+
+  CALIBRATION EXAMPLES:
+    GREEN:  Netherlands, France, UK (excellent modern infrastructure).
+    YELLOW: Israel (roads work, power grid operational, water normal, internet fast — even
+            during full-scale war with Iran. Missile alerts do not affect physical systems.
+            This is YELLOW, not RED, not PURPLE. Do not be confused by the war context.)
+    ORANGE: Iran (sanctions cause power/fuel shortages and utility unreliability in cities),
+            Brazil (road fatality rate, unreliable power in parts of major cities).
+    RED:    Nigeria (road fatality rate among world's highest, utility collapse common),
+            Ukraine 2024-2026 (power grid repeatedly struck by missiles, rolling nationwide
+            blackouts affecting major cities for hours/day — this is genuinely RED because
+            the physical system is degraded throughout the country).
+    PURPLE: Yemen 2023, Libya (infrastructure collapsed in major cities — roads impassable,
+            no power, no water, no internet in large parts of the country).
+
   GREEN:  Modern, reliable infrastructure. Safe roads, reliable power/water/internet.
-  YELLOW: Generally good with some gaps. Rural roads less safe. Urban utilities reliable.
-  ORANGE: Unreliable infrastructure. Frequent power/water outages. Roads dangerous in regions.
-  RED:    Poor infrastructure nationwide. OR infrastructure physically damaged by conflict or
-          disaster with tangible consequences for travelers in affected areas.
+  YELLOW: Generally good with some gaps. Urban utilities reliable. Some rural road/utility gaps.
+          This includes countries at war where urban infrastructure still physically functions.
+  ORANGE: Unreliable infrastructure in significant parts of the country. Frequent unpredictable
+          power/water outages in cities, OR dangerous road conditions widely affecting travelers.
+  RED:    Poor infrastructure nationwide or physically damaged by conflict with documented
+          ongoing system failure in major cities (not just localized damage).
           Soft floor: infrastructure RED -> total at least ORANGE.
-  PURPLE: Infrastructure PHYSICALLY COLLAPSED in major cities. No roads, power, water, comms.
+  PURPLE: Infrastructure PHYSICALLY COLLAPSED in major cities. Roads impassable, power/water/
+          comms non-functional as a sustained condition. A traveler cannot move or communicate.
           Soft floor: infrastructure PURPLE -> total at least RED.
-  CRITICAL: Score infrastructure on PHYSICAL state only — not on security conditions.
-  Missile alerts, curfews, and security restrictions are armed_conflict factors.
-  A country where roads/power/water/internet function normally = GREEN or YELLOW on
-  infrastructure even during an active war. Only score higher if the briefing contains
-  SPECIFIC evidence of physical infrastructure destruction or system-wide failure.
-  Israel (March 2026) = YELLOW infrastructure (roads work, power/water/internet normal,
-  minor disruption from alerts). Iran = ORANGE (sanctions cause shortages, not collapse).
 
 QUANTITATIVE THRESHOLDS:
 
