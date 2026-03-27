@@ -1097,12 +1097,16 @@ TERRORISM — Score based on organised non-state actors attacking civilians INSI
           such lone-wolf attack within 12 months triggers RED (see RED rule below).
   RED:    Active organised non-state campaign. Requires BOTH:
           (a) identified organised group with stated/demonstrated ongoing intent, AND
-          (b) multiple attacks in past 2 years with deaths, OR 3+ attacks in past 12 months,
-              OR persistent monthly incidents.
+          (b) multiple attacks WITH DEATHS in past 2 years, OR 3+ attacks in past 12 months
+              WITH FATALITIES OR MULTIPLE INJURED, OR persistent monthly incidents WITH
+              CASUALTIES (deaths or injuries).
+          Attacks with zero casualties — even many of them — do NOT satisfy condition (b).
+          A group that has demonstrated the ability to detonate devices but has not killed
+          or injured anyone scores ORANGE (demonstrated capability, no proven lethality).
           AND attacks are not exclusively focused on military targets — civilian targets,
           civilian infrastructure, or attacks in public areas must be part of the pattern.
           OR systematic targeting of a specific ethnic/national group across multiple
-          separate incidents by organised actors.
+          separate incidents by organised actors WITH documented harm (deaths or injuries).
           LONE-WOLF FREQUENCY TRIGGER: Even without a confirmed organised group, RED
           applies if there are 2+ separate lone-wolf attacks with fatalities, each
           politically or ideologically motivated, in any rolling 12-month period.
