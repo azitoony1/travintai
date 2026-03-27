@@ -1223,12 +1223,13 @@
                 <div style="padding: 24px;">
                     <div class="detail-threat-badge ${level}">${label}</div>
                     <div class="threat-categories">
-                        ${['armed_conflict', 'regional_instability', 'terrorism', 'civil_strife', 'crime', 'health', 'infrastructure'].map(cat => {
+                        ${['armed_conflict', 'regional_instability', 'terrorism', 'civil_strife', 'legal_risk', 'crime', 'health', 'infrastructure'].map(cat => {
                             const CATEGORY_LABELS = {
                                 armed_conflict:      'Armed Conflict',
                                 regional_instability:'Regional Instability',
                                 terrorism:           'Terrorism',
-                                civil_strife:        'Governance & Legal Climate',
+                                civil_strife:        'Civil Strife',
+                                legal_risk:          'Legal Risk',
                                 crime:               'Crime',
                                 health:              'Health',
                                 infrastructure:      'Infrastructure'

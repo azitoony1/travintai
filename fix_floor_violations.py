@@ -24,8 +24,9 @@ load_dotenv()
 supabase = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_SERVICE_KEY"))
 
 ALL_CATS = ["armed_conflict", "regional_instability", "terrorism",
-            "civil_strife", "crime", "health", "infrastructure"]
-SECURITY_CATS = {"armed_conflict", "regional_instability", "terrorism", "civil_strife"}
+            "civil_strife", "legal_risk", "crime", "health", "infrastructure"]
+SECURITY_CATS = {"armed_conflict", "regional_instability", "terrorism", "civil_strife",
+                 "legal_risk"}
 LVL = {"GREEN": 1, "YELLOW": 2, "ORANGE": 3, "RED": 4, "PURPLE": 5}
 ILV = {v: k for k, v in LVL.items()}
 IDENTITY_LAYERS = ["jewish_israeli", "solo_women"]
@@ -40,9 +41,9 @@ def calculate_total_score(category_scores):
     def s(cat):
         return LVL.get(category_scores.get(cat, "GREEN"), 1)
 
-    # Layer 1: hard veto — armed_conflict PURPLE only
-    if s("armed_conflict") >= 5:
-        return "PURPLE"
+    # Layer 1: hard veto — armed_conflict RED and PURPLE
+    if s("armed_conflict") >= 5: return "PURPLE"
+    if s("armed_conflict") >= 4: return "RED"
 
     # Layer 2: weighted average
     weighted_sum = sum(
@@ -58,15 +59,15 @@ def calculate_total_score(category_scores):
     elif avg <= 4.4: raw = "RED"
     else:            raw = "PURPLE"
 
-    # Layer 3: soft floors
-    ter = s("terrorism")
-    cs  = s("civil_strife")
-    max_ter_cs = max(ter, cs)
-    if max_ter_cs == 5:   floor = "RED"
-    elif max_ter_cs == 4: floor = "ORANGE"
-    else:                 floor = "GREEN"
+    # Layer 3: soft floors — all 8 categories
+    floor = 1
+    for cat in ALL_CATS:
+        v = s(cat)
+        if v >= 5:   floor = max(floor, 4)
+        elif v >= 4: floor = max(floor, 3)
+        elif v >= 3 and cat == "crime": floor = max(floor, 2)
 
-    return ILV[max(LVL[raw], LVL[floor])]
+    return ILV[max(LVL[raw], floor)]
 
 
 def parse_scores(raw):

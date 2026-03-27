@@ -184,11 +184,12 @@ def calculate_total_score(category_scores):
       softening the national total.
 
     LAYER 2 — WEIGHTED AVERAGE (applies only when armed_conflict < RED):
-      Security categories count DOUBLE:
-        armed_conflict x2, regional_instability x2, terrorism x2, civil_strife x2
+      Security/political categories count DOUBLE:
+        armed_conflict x2, regional_instability x2, terrorism x2, civil_strife x2,
+        legal_risk x2
       Other categories count ONCE:
         crime x1, health x1, infrastructure x1
-      Total weight: 11 points
+      Total weight: 13 points
 
       Weighted avg -> Total
         <= 1.4  -> GREEN
@@ -197,7 +198,7 @@ def calculate_total_score(category_scores):
         3.5-4.4 -> RED
         > 4.4   -> PURPLE
 
-    LAYER 3 — SOFT FLOORS (all 7 categories):
+    LAYER 3 — SOFT FLOORS (all 8 categories):
       Applied after the weighted average to prevent systematic under-scoring.
 
       For EVERY category (security, crime, health, infrastructure):
@@ -218,8 +219,9 @@ def calculate_total_score(category_scores):
     RESULT: The highest of (Layer 1 veto | weighted avg | soft floors) wins.
     """
     all_categories = ["armed_conflict", "regional_instability", "terrorism", "civil_strife",
-                      "crime", "health", "infrastructure"]
-    security_cats  = {"armed_conflict", "regional_instability", "terrorism", "civil_strife"}
+                      "legal_risk", "crime", "health", "infrastructure"]
+    security_cats  = {"armed_conflict", "regional_instability", "terrorism", "civil_strife",
+                      "legal_risk"}
     level_to_int   = {"GREEN": 1, "YELLOW": 2, "ORANGE": 3, "RED": 4, "PURPLE": 5}
     int_to_level   = {1: "GREEN", 2: "YELLOW", 3: "ORANGE", 4: "RED", 5: "PURPLE"}
 
@@ -268,6 +270,7 @@ def calculate_total_score(category_scores):
         v = lvl(cat)
         if v >= 5:   floor = max(floor, 4)  # any PURPLE -> total at least RED
         elif v >= 4: floor = max(floor, 3)  # any RED    -> total at least ORANGE
+        elif v >= 3 and cat == "crime": floor = max(floor, 2)  # crime ORANGE -> at least YELLOW
 
     result_int = max(level_to_int[raw], floor)
     return int_to_level[result_int]
@@ -406,11 +409,18 @@ TERRORISM — use these integrated level definitions:
           documented attack against a Jewish/Israeli target in past 3 years,
           OR: Israeli NSC Level 2 (Exercise Caution),
           OR: multiple documented antisemitic attacks on persons (not just property) with
-          political/ideological motivation in past 2 years, even without a confirmed group.
+          political/ideological motivation in past 2 years, even without a confirmed group,
+          OR: systematic state-sponsored antisemitic propaganda or incitement — government
+          media, school curricula, or official rhetoric explicitly calling for harm to Jews
+          or denial of Israel's right to exist — creating a documented ideological environment
+          that demonstrably elevates the risk of attacks against Jewish or Israeli travelers
+          even absent a confirmed organised group (Iran is the clearest example).
 
   RED: Base RED conditions met (organised campaign, repeat attacks, civilian targeting),
-       OR: Hezbollah network or IRGC proxies documented as operationally present in-country
-       with stated goal of targeting Israeli nationals and demonstrated capability to act,
+       OR: any organised group or state-linked network — including but not limited to
+       Hezbollah, IRGC proxies, Al-Qaeda affiliates, extreme-right or extreme-left groups —
+       documented as operationally present in-country with stated goal of targeting Jewish
+       or Israeli individuals and demonstrated capability to act,
        OR: Israeli NSC Level 3 (Reconsider Travel),
        OR: 2+ organised attacks specifically targeting Jewish/Israeli targets with casualties
        (synagogues, Israeli-flagged businesses, Israeli diplomatic staff) in past 3 years,
@@ -420,39 +430,63 @@ TERRORISM — use these integrated level definitions:
   PURPLE: Israeli NSC Level 4 (Do Not Travel) — this is the definitive PURPLE trigger.
           The Israeli government has determined Israeli nationals face near-certain lethal risk.
 
-GOVERNANCE & LEGAL CLIMATE (civil_strife) — use these integrated level definitions:
+CIVIL STRIFE — use these integrated level definitions (unrest, protests, political violence only):
 
-  GREEN: Base GREEN conditions met AND no institutional antisemitism at government level AND
-         Jewish community (if present) operates without government interference AND no
-         restrictions on Jewish travelers beyond those applying to all foreigners.
+  GREEN: Base GREEN conditions met (politically stable, protests rare and peaceful). No
+         significant unrest or political violence. No state-condoned mob violence against
+         Jewish community.
 
-  YELLOW: Base YELLOW conditions met, OR: government rhetoric hostile to Israel/Jews but no
-          legal enforcement or systematic discrimination creating material risk for travelers,
-          OR: diplomatic tensions with Israel that do not translate to risk for individual
-          Jewish or Israeli travelers.
+  YELLOW: Base YELLOW conditions met (occasional protests, quickly dispersed). No significant
+          violence. Government rhetoric hostile to Israel/Jews but not translating into
+          street violence or state-condoned attacks.
 
-  ORANGE: Base ORANGE conditions met (sustained violent protests, authoritarian laws
-          criminalizing traveler behavior), OR: state-sanctioned antisemitism with legal
-          dimension (government-sponsored antisemitic campaigns, selective enforcement
-          targeting Jews, institutionally hostile policy creating security environment),
-          OR: Israeli embassy/consulate expelled or formally absent by state decision
-          (loss of consular protection), OR: Jewish travelers subject to heightened official
-          scrutiny, surveillance, or bureaucratic obstruction (systematic questioning, delays,
-          targeting at entry points).
+  ORANGE: Base ORANGE conditions met (sustained protests with violence, tear gas, periodic
+          arrests, some city areas periodically unsafe). OR: antisemitic mobs or riots
+          specifically targeting Jewish institutions or neighborhoods with documented violence
+          and inadequate or complicit police response.
 
-  RED: Base RED conditions met (widespread unrest, government using lethal force, foreigners
-       detained), OR: active government persecution of Jewish community with legal authority
-       (documented arrests, asset seizures, forced closure of Jewish institutions),
-       OR: Israeli nationals systematically targeted by authorities (detained at border,
-       interrogated based on identity, subject to laws criminalizing Israeli association),
-       OR: Israeli passport legally banned — traveler CANNOT ENTER with Israeli passport
-       (Iran, Saudi Arabia, Lebanon, Syria, Libya, Yemen, Iraq, Pakistan currently). Note:
-       American/EU Jews without Israeli passport can still enter some of these — distinguish
-       in the narrative. The ban raises this score to RED minimum for Israeli passport holders.
+  RED: Base RED conditions met (widespread unrest, lethal force against protesters, breakdown
+       of rule of law). OR: state-condoned or state-incited mob violence specifically
+       targeting the Jewish community (pogroms, government-sanctioned attacks, authorities
+       standing aside during attacks on Jewish targets).
 
-  PURPLE: Base PURPLE conditions met (coup, civil war, collapse of public order),
-          OR: Jewish travelers systematically targeted by state forces with violence or
-          indefinite detention with no consular protection available.
+  PURPLE: Base PURPLE conditions met (coup, civil war, complete collapse of public order).
+          OR: state actively deploys forces against Jewish community with lethal violence.
+
+LEGAL RISK — use these integrated level definitions (state legal threat to this traveler):
+
+  GREEN: Base GREEN conditions met AND no legal restrictions specific to Jewish travelers or
+         Israeli passport holders AND Israeli travelers' legal rights respected equally with
+         other foreigners AND consular access available.
+
+  YELLOW: Base YELLOW conditions met. OR: government rhetoric hostile to Israel/Jews but no
+          legal enforcement creating material risk for travelers. OR: diplomatic tensions
+          with Israel that do not translate to legal jeopardy for individual travelers.
+
+  ORANGE: Base ORANGE conditions met (laws actively enforced against foreigners). OR:
+          state-sanctioned antisemitism with legal dimension (selective enforcement against
+          Jews, institutionally hostile bureaucratic targeting). OR: Israeli embassy/consulate
+          expelled or formally absent by state decision — loss of consular protection.
+          OR: Jewish travelers subject to systematic heightened scrutiny or obstruction at
+          entry points (documented pattern of questioning, delays, targeting based on identity).
+          OR: systematic state-sponsored antisemitic propaganda or incitement — government
+          media, school curricula, or official rhetoric explicitly calling for harm to Jews
+          or denial of Israel's right to exist — creating a documented ideological environment
+          that demonstrably elevates risk of attacks against Jewish or Israeli travelers.
+
+  RED: Base RED conditions met (arbitrary detention pattern, state uses foreigners as
+       bargaining chips). OR: Israeli passport legally banned — traveler CANNOT ENTER with
+       Israeli passport (Iran, Saudi Arabia, Lebanon, Syria, Libya, Yemen, Iraq, Pakistan
+       currently). Note: American/EU Jews without Israeli passport may enter some of these
+       — distinguish in narrative. OR: active government persecution of Jewish community
+       with legal authority (documented arrests, asset seizures, forced closures of Jewish
+       institutions). OR: Israeli nationals systematically targeted by authorities (detained
+       at border, interrogated based on identity, subject to laws criminalizing Israeli
+       association or Israeli passport).
+
+  PURPLE: Base PURPLE conditions met (state systematically targets foreigners with violence
+          or indefinite detention). OR: Jewish travelers systematically targeted by state
+          forces with violence or indefinite detention with no consular protection available.
 
 CRIME — use these integrated level definitions:
 
@@ -480,6 +514,9 @@ CRIME — use these integrated level definitions:
           kidnapping-for-ransom with documented incidents (very rare — requires hard evidence,
           not speculation).
 
+CRIME — inherit base score. Raise using the integrated crime definitions above only when
+        hate crime patterns specific to Jewish/Israeli travelers are documented.
+
 HEALTH — inherit base score. Exception: if Israeli passport holders are explicitly denied
 access to state hospitals in this country, note it prominently in the narrative but only
 raise the score if the denial is systematic and affects emergency care.
@@ -487,7 +524,7 @@ raise the score if the denial is systematic and affects emergency care.
 INFRASTRUCTURE — inherit base score. Passport restrictions affect entry, not in-country roads.
 
 HARD VETOES (applied after scoring, override everything):
-  Israeli passport banned (cannot legally enter) → total minimum RED.
+  Israeli passport banned (cannot legally enter) → legal_risk minimum RED, total minimum RED.
   Israeli NSC Level 4 → total PURPLE.
 
 SOFT FLOORS:
@@ -520,37 +557,61 @@ specific deliberate targeting of women by terrorist actors. General terrorism ri
 affects all travelers equally. The exception is narrow: Taliban-controlled territory where
 women's visible presence is itself criminalised and enforcement is violent.
 
-GOVERNANCE & LEGAL CLIMATE (civil_strife) — use these integrated level definitions:
+CIVIL STRIFE — use these integrated level definitions (unrest, protests, political violence only):
 
-  GREEN: Base GREEN conditions met AND no legal restrictions on women's movement or dress
-         AND women can travel, use hotels, and access services independently without legal risk.
+  GREEN: Base GREEN conditions met (politically stable, no significant unrest). No political
+         violence affecting travelers. Women's rights protests, if any, are peaceful.
 
-  YELLOW: Base YELLOW conditions met, OR: strong cultural norms discouraging women traveling
-          alone (conservative social expectations) but no legal enforcement or criminal
+  YELLOW: Base YELLOW conditions met (occasional protests, quickly dispersed, no significant
+          violence). Political tensions exist but do not create risk for travelers.
+
+  ORANGE: Base ORANGE conditions met (sustained protests with violence, tear gas, some areas
+          periodically unsafe). OR: active crackdown on women's rights demonstrations with
+          violent police response — creating collateral risk for solo women travelers who
+          may be in the vicinity or mistakenly associated with protesters.
+
+  RED: Base RED conditions met (widespread unrest, lethal force against protesters,
+       significant breakdown of rule of law). OR: government-deployed violence specifically
+       targeting women's rights activists or demonstrators at scale, creating genuine risk
+       for any woman present in public during crackdown periods.
+
+  PURPLE: Base PURPLE conditions met (coup, civil war, complete collapse of public order).
+
+LEGAL RISK — use these integrated level definitions (state legal threat to solo women travelers):
+
+  GREEN: Base GREEN conditions met AND no legal restrictions on women's independent movement
+         or dress AND women can travel, use hotels, and access services independently without
+         any legal risk or required permissions.
+
+  YELLOW: Base YELLOW conditions met. OR: strong cultural norms discouraging women traveling
+          alone (conservative social expectations) but with no legal enforcement or criminal
           penalties — traveler should be aware but faces no legal jeopardy.
 
-  ORANGE: Base ORANGE conditions met (sustained violent protests, authoritarian laws
-          criminalizing traveler behavior), OR: legally enforced dress code with criminal
-          penalties — mandatory hijab, modesty laws enforced by morality police or regular
-          law enforcement. The law exists and CAN be applied to a foreign woman. Do NOT
-          score YELLOW here even if enforcement has recently relaxed — the structural legal
-          risk remains. OR: laws restricting women's access to certain public spaces, or
-          requiring male accompaniment in specific formal settings (government offices, courts).
+  ORANGE: Base ORANGE conditions met (laws actively enforced against foreigners). OR: legally
+          enforced dress code with criminal penalties — mandatory hijab, modesty laws enforced
+          by morality police or regular law enforcement. The law exists and CAN be applied to
+          a foreign woman traveler. Do NOT score YELLOW even if enforcement has recently
+          relaxed — the structural legal risk remains as long as the law is on the books and
+          has been applied. OR: laws restricting women's access to certain public spaces, or
+          requiring male accompaniment in formal settings (government offices, courts, banks).
 
-  RED: Base RED conditions met (widespread unrest, foreigners detained, lethal force against
-       protesters), OR: male guardianship laws (mahram) restricting women's independent
-       movement, hotel check-in, or use of transport — a solo woman legally cannot operate
-       independently in this country without a male companion. Score RED minimum regardless
-       of how strictly this is currently enforced. The structural legal risk is RED.
-       OR: active crackdown on women's rights with documented arrests of women for dress
-       or behavior violations (Iran 2022-present is the clearest example).
+  RED: Base RED conditions met (arbitrary detention, state uses foreigners as bargaining
+       chips). OR: male guardianship laws (mahram) restricting women's independent movement,
+       hotel check-in, or use of transport without a male companion — a solo woman legally
+       cannot operate independently. Score RED minimum regardless of how strictly enforced
+       currently — the structural legal risk is RED as long as the law exists.
+       OR: active crackdown on women's rights with documented arrests of women for dress or
+       behavior violations (Iran 2022-present is the clearest active example).
 
-  PURPLE: Base PURPLE conditions met (coup, civil war, collapse of public order),
-          OR: complete legal prohibition of solo women's movement without male guardian with
-          active violent enforcement and no reliable consular protection.
+  PURPLE: Base PURPLE conditions met (state systematically targets foreigners with violence
+          or indefinite detention). OR: complete legal prohibition of solo women's independent
+          movement without male guardian with active violent enforcement and no reliable
+          consular protection.
 
-HARD VETO: Country requires male guardian for independent travel → total minimum RED.
-           Country requires male permission to obtain passport or travel abroad → total minimum RED.
+HARD VETO: Country requires male guardian for independent travel → legal_risk minimum RED,
+           total minimum RED.
+           Country requires male permission to obtain passport or travel abroad → legal_risk
+           minimum RED, total minimum RED.
 
 CRIME — use these integrated level definitions:
 
@@ -582,6 +643,9 @@ CRIME — use these integrated level definitions:
           impossible without private security — reserved for active conflict zones where
           rape is systematically used as a weapon affecting civilian movement.
 
+CRIME — inherit base score. Raise using the integrated crime definitions above when
+        structural GBV patterns or targeting of solo women travelers are documented.
+
 HEALTH — inherit base score. Raise if: reproductive healthcare is inaccessible (emergency
 contraception unavailable, abortion illegal with no medical exceptions) AND this creates
 a genuine safety risk for travelers, OR sexual assault care is non-functional (no forensic
@@ -603,6 +667,7 @@ Return ONLY valid JSON. No markdown, no preamble.
     "regional_instability":  "GREEN|YELLOW|ORANGE|RED|PURPLE",
     "terrorism":             "GREEN|YELLOW|ORANGE|RED|PURPLE",
     "civil_strife":          "GREEN|YELLOW|ORANGE|RED|PURPLE",
+    "legal_risk":            "GREEN|YELLOW|ORANGE|RED|PURPLE",
     "crime":                 "GREEN|YELLOW|ORANGE|RED|PURPLE",
     "health":                "GREEN|YELLOW|ORANGE|RED|PURPLE",
     "infrastructure":        "GREEN|YELLOW|ORANGE|RED|PURPLE"
@@ -612,6 +677,7 @@ Return ONLY valid JSON. No markdown, no preamble.
     "regional_instability":  "...",
     "terrorism":             "...",
     "civil_strife":          "...",
+    "legal_risk":            "...",
     "crime":                 "...",
     "health":                "...",
     "infrastructure":        "..."
@@ -621,6 +687,7 @@ Return ONLY valid JSON. No markdown, no preamble.
     "regional_instability":  "HIGH|MEDIUM|LOW|INSUFFICIENT",
     "terrorism":             "HIGH|MEDIUM|LOW|INSUFFICIENT",
     "civil_strife":          "HIGH|MEDIUM|LOW|INSUFFICIENT",
+    "legal_risk":            "HIGH|MEDIUM|LOW|INSUFFICIENT",
     "crime":                 "HIGH|MEDIUM|LOW|INSUFFICIENT",
     "health":                "HIGH|MEDIUM|LOW|INSUFFICIENT",
     "infrastructure":        "HIGH|MEDIUM|LOW|INSUFFICIENT"
@@ -726,10 +793,11 @@ Write a factual intelligence briefing covering:
 1. ARMED CONFLICT: Any active wars, military operations, airstrikes, territorial conflicts?
 2. REGIONAL INSTABILITY: Neighboring conflicts with spillover? Geopolitical tensions?
 3. TERRORISM: Active groups, recent attacks, threat level?
-4. GOVERNANCE & LEGAL CLIMATE: Political violence, coups, riots, sustained protests, legal risks for travelers?
-5. CRIME: Organized crime, kidnapping, violent crime rates for travelers?
-6. HEALTH: Disease outbreaks, healthcare quality, medical access?
-7. INFRASTRUCTURE: Road safety, power/water reliability, transport quality?
+4. CIVIL STRIFE: Political violence, coups, riots, sustained protests, breakdown of public order?
+5. LEGAL RISK: Arbitrary detention of foreigners, criminalization of traveler behavior, consular access issues?
+6. CRIME: Organized crime, kidnapping, violent crime rates for travelers?
+7. HEALTH: Disease outbreaks, healthcare quality, medical access?
+8. INFRASTRUCTURE: Road safety, power/water reliability, transport quality?
 
 Be specific: name actual groups, cite specific incidents with dates, give statistics where known.
 If there is an active war or major conflict, describe it clearly — do not soften it.
@@ -1098,11 +1166,48 @@ GOVERNANCE & LEGAL CLIMATE [DB field: civil_strife] — Score based on internal 
   (strong democratic government, high public support for war effort, no internal repression
   of civilians) even while armed_conflict is RED. Score each independently.
 
+LEGAL RISK [DB field: legal_risk] — Score the legal and institutional threat the STATE
+  poses to travelers directly: criminalization of behaviors, arbitrary detention, compelled
+  compliance, denial of legal rights. This is NOT about civil unrest — a country can be
+  entirely stable (no protests, no riots) and still score RED here if the state systematically
+  detains foreigners or criminalizes ordinary traveler behavior.
+  Distinct from civil_strife (which covers unrest, riots, political violence by the population)
+  and crime (which covers non-state criminal actors).
+
+  GREEN:  Strong rule of law protecting travelers. No documented pattern of arbitrary detention
+          of foreigners. State does not criminalize ordinary traveler behavior. Travelers'
+          legal rights respected and consular access guaranteed without obstruction.
+
+  YELLOW: Generally functional legal protections. Some laws that could theoretically apply to
+          travelers (photography restrictions, alcohol rules, dress expectations) but rarely
+          if ever enforced against foreign tourists. Minor bureaucratic friction possible.
+          Consular access functional.
+
+  ORANGE: Laws that could meaningfully affect travelers are actively enforced against foreigners.
+          Mandatory behavioral requirements (dress codes, conduct laws, content restrictions)
+          with documented enforcement against tourists. State has detained foreigners briefly
+          for minor infractions. Travelers must actively comply with specific local laws.
+          Consular access sometimes delayed or complicated.
+
+  RED:    Documented pattern of arbitrary detention of foreign nationals, including for
+          political reasons or as diplomatic leverage. Risk of arrest for activities that
+          are legal in the traveler's home country is real and documented. State has used
+          foreign nationals as bargaining chips. Consular access not guaranteed. Certain
+          nationalities or identities are specifically targeted by authorities.
+          Note: legal_risk RED forces total score to at least ORANGE (soft floor applies).
+
+  PURPLE: State systematically targets foreign nationals with violence, indefinite detention,
+          or prosecution based on identity or nationality. No reliable consular protection.
+          Travelers face near-certain legal jeopardy upon entry or during stay. The state
+          itself is the primary threat to the traveler.
+          Note: legal_risk PURPLE forces total score to at least RED (soft floor applies).
+
 CRIME — Score criminal risk to travelers specifically. Anchor on homicide rate + kidnap risk.
   Score the national picture. If crime risk varies significantly by region (e.g. safe
   tourist zones vs. dangerous interior), note this in the narrative and use the regional
   scoring system — do not lower the national score to reflect only the safe zones.
   Do NOT conflate with terrorism (political violence) or civil strife (political unrest).
+  Note: crime ORANGE forces total score to at least YELLOW (soft floor applies).
 
   GREEN:  Under 5 homicides/100k/year. Petty theft possible in tourist areas but violent
           crime against travelers rare. No kidnap risk. Normal urban precautions sufficient.
