@@ -60,7 +60,7 @@ if not all([SUPABASE_URL, SUPABASE_SERVICE_KEY, GEMINI_API_KEY]):
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 gemini   = genai.Client(api_key=GEMINI_API_KEY)
 
-# All 22 countries in the system
+# All 27 countries in the system
 ALL_COUNTRIES = [
     ("Israel",                              "IL"),
     ("Netherlands",                         "NL"),
@@ -84,6 +84,11 @@ ALL_COUNTRIES = [
     ("Poland",                              "PL"),
     ("Iran",                                "IR"),
     ("Libya",                               "LY"),
+    ("Iceland",                             "IS"),
+    ("Norway",                              "NO"),
+    ("Canada",                              "CA"),
+    ("Italy",                               "IT"),
+    ("Belgium",                             "BE"),
 ]
 
 ALL_LAYERS = ["base", "jewish_israeli", "solo_women"]
@@ -1105,8 +1110,9 @@ TERRORISM — Score based on organised non-state actors attacking civilians INSI
           or injured anyone scores ORANGE (demonstrated capability, no proven lethality).
           AND attacks are not exclusively focused on military targets — civilian targets,
           civilian infrastructure, or attacks in public areas must be part of the pattern.
-          OR systematic targeting of a specific ethnic/national group across multiple
-          separate incidents by organised actors WITH documented harm (deaths or injuries).
+          NOTE: Targeting of specific ethnic or national groups is scored in identity layers
+          (jewish_israeli, etc.), NOT in the base layer. Base layer terrorism scores risk
+          to the general traveler population from political/ideological violence.
           LONE-WOLF FREQUENCY TRIGGER: Even without a confirmed organised group, RED
           applies if there are 2+ separate lone-wolf attacks with fatalities, each
           politically or ideologically motivated, in any rolling 12-month period.
@@ -1775,6 +1781,7 @@ Return ONLY this JSON (no markdown, no extra text):
 }}"""
 
     text = None
+    step2_model_used = None
     for attempt in range(1, 4):
         for model_name in STEP2_MODELS:
             try:
@@ -1787,6 +1794,7 @@ Return ONLY this JSON (no markdown, no extra text):
                     )
                 )
                 text = step2_response.text.strip()
+                step2_model_used = model_name
                 break
             except Exception as e:
                 err = str(e)
@@ -1912,7 +1920,7 @@ Return ONLY this JSON (no markdown, no extra text):
 
         # Attach the briefing for audit
         analysis["_briefing"] = briefing
-        print(f"  [OK] Scoring complete")
+        print(f"  [OK] Scoring complete [{step2_model_used}]")
         return analysis
 
     except Exception as e:
