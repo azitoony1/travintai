@@ -1224,7 +1224,16 @@
                     <div class="detail-threat-badge ${level}">${label}</div>
                     <div class="threat-categories">
                         ${['armed_conflict', 'regional_instability', 'terrorism', 'civil_strife', 'crime', 'health', 'infrastructure'].map(cat => {
-                            const label = cat.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                            const CATEGORY_LABELS = {
+                                armed_conflict:      'Armed Conflict',
+                                regional_instability:'Regional Instability',
+                                terrorism:           'Terrorism',
+                                civil_strife:        'Governance & Legal Climate',
+                                crime:               'Crime',
+                                health:              'Health',
+                                infrastructure:      'Infrastructure'
+                            };
+                            const label = CATEGORY_LABELS[cat] || cat.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                             const j = justifications[cat] || '';
                             const hasJ = j.length > 0;
                             return `
