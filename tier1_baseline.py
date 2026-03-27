@@ -805,11 +805,11 @@ This briefing will be used to assign threat scores. Accuracy is critical."""
 
     # Step 1 (briefing with Google Search grounding): 2.5 Flash confirmed to support grounding.
     # 3.x preview models may not support search grounding — keep 2.x for Step 1.
-    # Step 2 (JSON scoring, no search): try 3.1 Pro Preview first for better reasoning quality,
-    # fall back to 2.5 Flash, then 2.0 Flash.
+    # Step 2 (JSON scoring, no search): 3.1 Flash is faster and cheaper than Pro.
+    # Falls back to 2.5 Flash, then 2.0 Flash if 3.1 Flash is unavailable.
     # Note: gemini-1.5-flash is deprecated (404 NOT_FOUND as of 2026-03).
     STEP1_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash"]
-    STEP2_MODELS = ["gemini-3.1-pro-preview", "gemini-2.5-flash", "gemini-2.0-flash"]
+    STEP2_MODELS = ["gemini-3.1-flash-lite-preview", "gemini-2.5-flash", "gemini-2.0-flash"]
 
     import time as _time
 
@@ -1174,26 +1174,19 @@ LEGAL RISK [DB field: legal_risk] — Score the legal and institutional threat t
     — Laws that exist on the books but are never or rarely enforced against tourists.
       Score demonstrated enforcement patterns, not theoretical legal exposure.
 
-  CALIBRATION EXAMPLES:
-    GREEN:  Israel (general travelers — functional rule of law, consular access guaranteed,
-            foreign tourists not subject to wartime conscription or arbitrary detention),
-            Netherlands, France, UK, Australia, Japan.
-    YELLOW: China (photography rules, internet censorship, some bureaucratic friction; tourists
-            rarely detained), UAE (alcohol/dress rules exist but tourist tolerance is high).
-    ORANGE: Saudi Arabia (strict behavior enforcement for all visitors, dress codes, content
-            restrictions actively applied), Turkey (journalists/activists at risk; ordinary
-            tourists generally safe but some laws enforced selectively against foreigners).
-    RED:    Russia (Westerners detained as diplomatic bargaining chips — Evan Gershkovich case;
-            documented pattern), Iran (dual nationals targeted for arrest; hostage diplomacy
-            with Western governments; foreigners face real detention risk).
-    PURPLE: North Korea (total state control, no meaningful consular protection, travelers under
-            constant state surveillance with near-certain legal jeopardy). Reserved for states
-            where entry itself creates near-certain legal jeopardy for ordinary travelers.
+  DECISION RULE — ask before scoring:
+    Has the state detained foreign nationals (tourists/business travelers) WITHOUT cause in
+    the past 3 years, or used them as diplomatic leverage?        → YES = at least RED
+    Does the state actively enforce behavioral laws (dress, conduct, content) against
+    foreign tourists with documented consequences?                → YES = at least ORANGE
+    Do laws exist that could apply to travelers but enforcement
+    against tourists is rare or undocumented?                     → YES = YELLOW at most
+    Does the state treat foreign tourists with standard rule-of-law protections?
+                                                                  → YES = GREEN
 
   GREEN:  Strong rule of law protecting travelers. No documented pattern of arbitrary detention
           of foreigners. State does not criminalize ordinary traveler behavior. Travelers'
           legal rights respected and consular access guaranteed without obstruction.
-          Examples: EU countries, USA, Israel, Australia, Japan, UK.
 
   YELLOW: Generally functional legal protections. Some laws could theoretically apply to
           travelers (photography restrictions, alcohol rules, dress expectations) but are
@@ -1250,90 +1243,70 @@ HEALTH — Score based on traveler's ability to access safe medical care and avo
   Score what a traveler in a MAJOR CITY would experience — not worst-case rural areas.
   Score the PHYSICAL CAPABILITY of the healthcare system, not its workload or stress level.
 
-  CRITICAL WAR-CONTEXT RULE: A hospital treating large numbers of war casualties is STILL
-  A FUNCTIONING HOSPITAL. A health system that is "under strain", "overwhelmed", or "stretched
-  by the conflict" is NOT PURPLE and NOT RED unless it has physically stopped treating patients
-  or collapsed. A traveler who breaks a leg in Tel Aviv, Paris, or Kyiv can still get surgery.
-  Score what a civilian traveler with a medical emergency can access — not the abstract state
-  of the system as a whole.
+  DECISION RULE — ask before scoring above YELLOW:
+    Can a foreign traveler with a medical emergency (broken leg, heart attack, appendicitis)
+    get treatment at a hospital in the capital or a major city?
+      YES, reliably and to a high standard                        → GREEN
+      YES, but with limitations, delays, or rural gaps            → YELLOW
+      YES, but quality is poor and evacuation likely needed       → ORANGE
+      UNCERTAIN — some hospitals open but system severely degraded → RED
+      NO — hospitals in major cities are non-functional           → PURPLE
 
-  CALIBRATION EXAMPLES:
-    GREEN:  Israel (world-class hospitals — Hadassah, Sheba, Sourasky are among the best
-            in the Middle East; open and treating patients even during wartime; foreign
-            travelers receive full care), EU countries, USA, Australia, Japan.
-    ORANGE: Nigeria (hospitals exist but quality is poor and unreliable in many cities),
-            Iran (sanctions-strained but hospitals are open and treating patients).
-    RED:    Yemen 2015-2016 before full collapse (some hospitals open but severely degraded).
-    PURPLE: Yemen 2023 (hospitals bombed, non-functional in major cities), Gaza 2024 (healthcare
-            system physically destroyed), Syria 2015-2019 active bombing of hospitals.
+  CRITICAL WAR-CONTEXT RULE: A hospital treating large numbers of war casualties is STILL
+  A FUNCTIONING HOSPITAL. "Under strain", "overwhelmed", or "stretched by the conflict"
+  does NOT change the score unless the hospital has physically stopped treating civilian
+  patients. Score whether a traveler CAN get care — not whether the system is stressed.
+  A country at war whose capital hospitals remain open and treating patients scores based
+  on their underlying capability, not the volume of wartime demand placed on them.
 
   GREEN:  High-income country with fully functional hospitals. Standard vaccinations sufficient.
-          No active disease outbreaks. Medical care of reliable quality. (EU, USA, Australia,
-          Japan, Israel = GREEN regardless of geopolitical situation.)
+          No active disease outbreaks. Medical care of reliable quality in major cities.
   YELLOW: Adequate healthcare in major cities. Some rural limitations. Minor endemic disease
-          considerations (traveler's diarrhoea, low-level vector-borne risk in rural areas).
-          Travel health insurance advisable. Emergency care accessible in cities.
+          considerations. Travel health insurance advisable. Emergency care accessible in cities.
   ORANGE: Limited or variable healthcare outside major cities. Active endemic diseases requiring
-          prophylaxis (malaria, dengue, cholera in specific regions). Medical evacuation insurance
-          strongly recommended. Serious illness may require evacuation.
+          prophylaxis (malaria, dengue, cholera). Medical evacuation insurance strongly recommended.
   RED:    Poor healthcare infrastructure even in major cities. Standard surgical care not reliably
-          available or safe. Active epidemic or disease outbreak affecting travelers. Medical
-          evacuation very likely needed for any serious illness.
+          available or safe. Active epidemic or disease outbreak affecting travelers.
           Soft floor: health RED -> total at least ORANGE.
-  PURPLE: Healthcare system has PHYSICALLY COLLAPSED — hospitals bombed, closed, or completely
-          non-functional in major cities. A traveler with a medical emergency has nowhere to go.
-          PURPLE REQUIRES: hospitals in major cities are non-functional (bombed, closed, out of
-          supplies) AND no alternative emergency care exists. This is an extreme threshold.
-          NOT PURPLE: busy, strained, overwhelmed, underfunded, or treating many war casualties
-          if the hospitals are OPEN and TREATING patients — that is RED at most.
-          NOT PURPLE: a country at war where the capital's hospitals still function normally.
-          Examples of true PURPLE: Yemen 2023, Gaza 2024, Syria 2015-2019 (active bombing of
-          hospital network). Iran = ORANGE. Nigeria = RED. Israel = GREEN.
+  PURPLE: Healthcare system has PHYSICALLY COLLAPSED in major cities — hospitals non-functional
+          (bombed, closed, critically out of supplies). A traveler with a medical emergency has
+          nowhere to go. This is an extreme threshold.
+          NOT PURPLE: strained, overwhelmed, or busy hospitals that are still open and treating
+          patients. NOT PURPLE: a country at war where hospitals in the capital still function.
           Soft floor: health PURPLE -> total at least RED.
 
 INFRASTRUCTURE — Score based on the PHYSICAL STATE of roads, power, water, and transport.
   Score ONLY physical capability — not security conditions, not missile alerts, not curfews.
 
-  CRITICAL WAR-CONTEXT RULE: Missile alerts, curfews, and security restrictions are
-  armed_conflict factors — they NEVER raise the infrastructure score. A country where
-  roads are drivable, power is on most of the time, water flows, and the internet works
-  in major cities scores YELLOW at most — even if that country is in an active war.
-  Only score higher if you can point to SPECIFIC evidence that the physical systems have
-  been destroyed and are not functioning. "Under attack" is not the same as "collapsed."
+  ESCALATION GATE — answer these before scoring above YELLOW:
+    Are major city roads physically impassable (destroyed, not just security-restricted)?  YES/NO
+    Is the power grid failing in major cities on a sustained basis (not just alerts)?      YES/NO
+    Is water supply non-functional in major cities?                                        YES/NO
+    Is internet/mobile communications down in major cities?                                YES/NO
 
-  ESCALATION GATE — ask these questions before scoring above YELLOW:
-    Are major city roads physically impassable (not just warned against for security)?  YES/NO
-    Is the power grid failing in major cities (not just intermittent alerts)?           YES/NO
-    Is water supply non-functional in major cities?                                     YES/NO
-    Is internet/communications down in major cities?                                    YES/NO
-  If all four answers are NO → score YELLOW at most, regardless of the war situation.
-  If 1-2 are YES → ORANGE. If 3-4 are YES and affecting major cities → RED.
-  PURPLE requires all four essentially non-functional AND the situation is ongoing.
+    All NO  → YELLOW at most. Stop here.
+    1-2 YES → ORANGE (utilities unreliable in meaningful ways)
+    3-4 YES affecting major cities → RED (system-wide degradation)
+    All YES and ongoing with no functioning alternatives → PURPLE
 
-  CALIBRATION EXAMPLES:
-    GREEN:  Netherlands, France, UK (excellent modern infrastructure).
-    YELLOW: Israel (roads work, power grid operational, water normal, internet fast — even
-            during full-scale war with Iran. Missile alerts do not affect physical systems.
-            This is YELLOW, not RED, not PURPLE. Do not be confused by the war context.)
-    ORANGE: Iran (sanctions cause power/fuel shortages and utility unreliability in cities),
-            Brazil (road fatality rate, unreliable power in parts of major cities).
-    RED:    Nigeria (road fatality rate among world's highest, utility collapse common),
-            Ukraine 2024-2026 (power grid repeatedly struck by missiles, rolling nationwide
-            blackouts affecting major cities for hours/day — this is genuinely RED because
-            the physical system is degraded throughout the country).
-    PURPLE: Yemen 2023, Libya (infrastructure collapsed in major cities — roads impassable,
-            no power, no water, no internet in large parts of the country).
+  CRITICAL: Missile alerts, curfews, and security restrictions are armed_conflict factors —
+  they do NOT affect infrastructure score. A country where roads are drivable, power is
+  on, water flows, and internet works in major cities scores YELLOW at most regardless of
+  the security situation. Score the physical state of the systems, not the threat context
+  around them. "Infrastructure is under attack" is NOT the same as "infrastructure has
+  collapsed." Score what has actually failed, based on the gate questions above.
 
-  GREEN:  Modern, reliable infrastructure. Safe roads, reliable power/water/internet.
+  GREEN:  Modern, reliable infrastructure. Safe roads, reliable power/water/internet in cities.
   YELLOW: Generally good with some gaps. Urban utilities reliable. Some rural road/utility gaps.
-          This includes countries at war where urban infrastructure still physically functions.
+          A country at war whose physical urban infrastructure still functions scores here.
   ORANGE: Unreliable infrastructure in significant parts of the country. Frequent unpredictable
           power/water outages in cities, OR dangerous road conditions widely affecting travelers.
-  RED:    Poor infrastructure nationwide or physically damaged by conflict with documented
-          ongoing system failure in major cities (not just localized damage).
+  RED:    System-wide physical degradation. Utilities unreliable throughout the country, OR
+          infrastructure physically damaged by conflict causing documented ongoing failure in
+          major cities (not just localized or temporary damage).
           Soft floor: infrastructure RED -> total at least ORANGE.
   PURPLE: Infrastructure PHYSICALLY COLLAPSED in major cities. Roads impassable, power/water/
-          comms non-functional as a sustained condition. A traveler cannot move or communicate.
+          comms non-functional on a sustained basis. A traveler cannot move or communicate.
           Soft floor: infrastructure PURPLE -> total at least RED.
 
 QUANTITATIVE THRESHOLDS:
