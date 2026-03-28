@@ -1036,6 +1036,8 @@
             'USA': [[24.5, -125], [49.4, -66.9]],  // Continental US only
             'France': [[41.3, -5.2], [51.1, 9.6]],  // Metropolitan France only
             'Russia': [[41.2, 19.6], [81.9, 180]],  // Western Russia to avoid wrap
+            'Norway': [[57.9, 4.5], [71.2, 31.1]],  // Mainland only, excludes Svalbard & Jan Mayen
+            'Canada': [[41.7, -141.0], [83.1, -52.6]],  // Mainland + major islands, excludes remote outliers
             'Aruba': [[12.4, -70.1], [12.6, -69.8]]
         };
         
@@ -1087,6 +1089,7 @@
                     regional_instability: cats.regional_instability || null,
                     terrorism:            cats.terrorism            || null,
                     civil_strife:         cats.civil_strife         || null,
+                    legal_risk:           cats.legal_risk           || null,
                     crime:                cats.crime                || null,
                     health:               cats.health               || null,
                     infrastructure:       cats.infrastructure       || null,
