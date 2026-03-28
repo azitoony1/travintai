@@ -1735,6 +1735,7 @@ Return ONLY this JSON (no markdown, no extra text):
     "regional_instability": "GREEN|YELLOW|ORANGE|RED|PURPLE",
     "terrorism":            "GREEN|YELLOW|ORANGE|RED|PURPLE",
     "civil_strife":         "GREEN|YELLOW|ORANGE|RED|PURPLE",
+    "legal_risk":           "GREEN|YELLOW|ORANGE|RED|PURPLE",
     "crime":                "GREEN|YELLOW|ORANGE|RED|PURPLE",
     "health":               "GREEN|YELLOW|ORANGE|RED|PURPLE",
     "infrastructure":       "GREEN|YELLOW|ORANGE|RED|PURPLE"
@@ -1755,6 +1756,7 @@ Return ONLY this JSON (no markdown, no extra text):
     "regional_instability": "Max 40 words. Name specific neighbouring conflicts.",
     "terrorism":            "Max 40 words. Name the group or incident. Lone-wolf or organised?",
     "civil_strife":         "Max 40 words. Cite specific unrest events.",
+    "legal_risk":           "Max 40 words. Cite specific laws or detention incidents affecting travelers.",
     "crime":                "Max 40 words. Include homicide rate per 100k if known.",
     "health":               "Max 40 words. Hospital access, disease risk.",
     "infrastructure":       "Max 40 words. Physical state of roads/power/water only."
@@ -1764,6 +1766,7 @@ Return ONLY this JSON (no markdown, no extra text):
     "regional_instability": "HIGH|MEDIUM|LOW|INSUFFICIENT",
     "terrorism":            "HIGH|MEDIUM|LOW|INSUFFICIENT",
     "civil_strife":         "HIGH|MEDIUM|LOW|INSUFFICIENT",
+    "legal_risk":           "HIGH|MEDIUM|LOW|INSUFFICIENT",
     "crime":                "HIGH|MEDIUM|LOW|INSUFFICIENT",
     "health":               "HIGH|MEDIUM|LOW|INSUFFICIENT",
     "infrastructure":       "HIGH|MEDIUM|LOW|INSUFFICIENT"
@@ -1883,13 +1886,15 @@ Return ONLY this JSON (no markdown, no extra text):
         # Validate: every score field must be a valid level
         valid_levels = {"GREEN", "YELLOW", "ORANGE", "RED", "PURPLE"}
         score_fields = ["armed_conflict", "regional_instability", "terrorism",
-                        "civil_strife", "crime", "health", "infrastructure"]
+                        "civil_strife", "legal_risk", "crime", "health", "infrastructure"]
         scores = analysis.get("scores", {})
         for field in score_fields:
             val = scores.get(field, "").strip().upper()
             if val not in valid_levels:
-                print(f"  [!] Invalid score '{val}' for {field} — defaulting to ORANGE")
-                scores[field] = "ORANGE"
+                # legal_risk defaults GREEN (most countries pose no legal threat to travelers)
+                default = "GREEN" if field == "legal_risk" else "ORANGE"
+                print(f"  [!] Invalid/missing score '{val}' for {field} — defaulting to {default}")
+                scores[field] = default
 
         # Evidence gate: enforce pre-screening answers against scores
         # Infrastructure: if all 4 systems YES + no damage quote -> cap at YELLOW
