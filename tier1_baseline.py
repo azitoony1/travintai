@@ -1088,7 +1088,11 @@ TERRORISM — Score based on organised non-state actors attacking civilians INSI
       inside Iran, intermittent attacks, but not a sustained campaign against visitors).
     Nigeria: Boko Haram/ISWAP conduct weekly attacks in NE. = PURPLE in NE; RED nationally.
     France: IS-inspired lone-wolf and cell attacks; multiple incidents in recent years. = RED.
-    Netherlands: 2024 Amsterdam anti-Israeli attacks = lone-wolf hate crime, not IS campaign.
+    Netherlands (March 2026): Ashab al-Yamin (Iran-linked) conducted ~4 small explosive
+      device attacks with zero casualties. Organised group confirmed, demonstrated device
+      capability, but NO deaths or injuries. = ORANGE (group + capability, but zero-casualty
+      attacks do not meet RED condition (b)). NCTV Level 4 informs context but does not
+      override the casualty requirement in our framework.
 
   GREEN:  No credible non-state threat. No attacks with fatalities in 5+ years.
           No organised groups with stated intent to attack inside the country.
@@ -1130,6 +1134,15 @@ TERRORISM — Score based on organised non-state actors attacking civilians INSI
   NOTE: A group that primarily attacks military targets but also conducts attacks in civilian
         areas meets the "not exclusively military" requirement (e.g., if the group occasionally
         car-bombs cities alongside military operations).
+  NOTE: National government threat level ratings (NCTV Level 4, MI5 SEVERE, OCAM Level 3,
+        etc.) are INPUTS to the intelligence briefing — they inform context and help identify
+        groups and incidents. They do NOT directly determine the terrorism score and cannot
+        substitute for our framework criteria. A country with NCTV Level 4 but only
+        zero-casualty attacks = ORANGE, not RED. Apply our criteria independently.
+  NOTE: Cross-country consistency — if the same group is active in two neighbouring countries
+        with similar attack patterns and casualty profiles, both countries should score at
+        the same level for terrorism. If your scores differ for neighbouring countries with
+        the same threat actor, re-examine your reasoning.
 
 GOVERNANCE & LEGAL CLIMATE [DB field: civil_strife] — Score internal political violence,
   mass unrest, and governmental collapse affecting travelers' physical safety.
