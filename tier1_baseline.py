@@ -389,12 +389,20 @@ scores — never be lower. Score each category using the complete level definiti
 which integrate both base and identity-specific conditions. Assign the HIGHEST level for
 which ANY condition (base OR identity-specific) is met.
 
-ARMED CONFLICT — inherit base score. Israeli passport bans affect entry, not in-country
-conflict risk. Exception: if the conflict specifically involves deliberate targeting of
-Israeli nationals as a military/terrorist objective (e.g. Hezbollah missile campaigns
-explicitly targeting Israeli civilians), this may raise the terrorism score, not armed_conflict.
+CORE QUESTION FOR EVERY CATEGORY: "Does belonging to this identity group (being Jewish/
+Israeli, being a solo woman, etc.) create a STRUCTURALLY DIFFERENT risk in this category
+compared to a general traveler?" If the answer is NO — inherit base exactly. Only raise
+the score if the briefing contains specific evidence that this group faces a meaningfully
+different risk in this category. Do not raise a category just because the country is
+generally risky — that is already captured in the base layer.
 
-REGIONAL INSTABILITY — inherit base score. Geopolitical dynamics are the same for all travelers.
+ARMED CONFLICT — inherit base score. Bombs and bullets do not discriminate by identity.
+Israeli passport bans affect entry, not in-country conflict risk. Exception: if the
+conflict specifically involves deliberate targeting of this identity group as a
+military/terrorist objective, this may raise the terrorism score — not armed_conflict.
+
+REGIONAL INSTABILITY — inherit base score exactly. Geographic/regional risk is the same
+for all travelers regardless of identity. Never raise this category for any identity layer.
 
 TERRORISM — use these integrated level definitions:
 
@@ -551,11 +559,19 @@ GENERAL RULE: The base layer is the floor. Identity layer scores can equal or ex
 scores — never be lower. Score each category using the complete level definitions below.
 Assign the HIGHEST level for which ANY condition (base OR identity-specific) is met.
 
-ARMED CONFLICT — inherit base score. Exception: if the briefing documents systematic use
-of sexual violence as a weapon of war (DRC, Sudan historically), raise one level above base
-to reflect the additional targeting risk for women. Do not raise otherwise.
+CORE QUESTION FOR EVERY CATEGORY: "Does traveling as a solo woman create a STRUCTURALLY
+DIFFERENT risk in this category compared to a general traveler?" If NO — inherit base
+exactly. Only raise if the briefing documents a specific mechanism by which solo women
+face meaningfully greater risk in this category. Do not raise just because the country
+is generally risky.
 
-REGIONAL INSTABILITY — inherit base score.
+ARMED CONFLICT — inherit base score. Conflict risk does not change based on gender.
+Exception: if the briefing documents systematic use of sexual violence as a weapon of
+war (documented pattern, not isolated incidents), raise one level above base to reflect
+the additional targeting risk. Do not raise otherwise.
+
+REGIONAL INSTABILITY — inherit base score exactly. Geographic/regional risk is the same
+for all travelers regardless of gender or travel style. Never raise this category.
 
 TERRORISM — inherit base score. Do NOT raise above base unless the briefing documents
 specific deliberate targeting of women by terrorist actors. General terrorism risk
@@ -1019,6 +1035,16 @@ REGIONAL INSTABILITY — Score the impact of NEIGHBORING conflicts on travelers 
   Being geographically near a conflict does NOT automatically raise this score — show the
   actual traveler-affecting mechanism (cross-border fire, refugee-driven security pressure,
   economic collapse from sanctions/blockade, etc.).
+
+  OVERSEAS ASSETS RULE: Attacks on this country's military bases, ships, embassies, or
+  personnel located IN ANOTHER COUNTRY do NOT raise this country's regional_instability.
+  The risk from such attacks belongs to the country where the attack occurred. Ask only:
+  "Has conflict from outside reached travelers standing on THIS country's soil?"
+
+  IDENTITY LAYER RULE — HARD: regional_instability is ALWAYS inherited from the base layer
+  exactly. Never raise it for any identity group (jewish_israeli, solo_women, etc.).
+  Geography-driven risk does not change based on who the traveler is. Missiles, cross-border
+  armed groups, and refugee flows affect all travelers equally regardless of identity.
 
   MAXIMUM SCORE IS RED. Regional instability does not go to PURPLE. If a country has been
   drawn so fully into a regional conflict that it is effectively a direct participant, that
