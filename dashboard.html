@@ -582,12 +582,18 @@
             color: #fff;
             box-shadow: 0 0 15px rgba(248, 81, 73, 0.6);
         }
-        .category-level.purple { 
-            background: var(--purple); 
+        .category-level.purple {
+            background: var(--purple);
             color: #fff;
             box-shadow: 0 0 15px rgba(139, 79, 201, 0.6);
         }
-        
+        .category-level.pending {
+            background: var(--surface-elevated);
+            color: var(--text-muted);
+            font-style: italic;
+            border: 1px solid var(--border);
+        }
+
         .detail-section {
             margin-bottom: 24px;
         }
@@ -1247,7 +1253,7 @@
                                 <div class="category-item-row">
                                     <span class="category-name">${label}</span>
                                     <div style="display:flex;align-items:center;gap:6px;">
-                                        <span class="category-level ${(score[cat] || 'pending').toLowerCase()}">${THREAT_LABELS[score[cat]] || '–'}</span>
+                                        <span class="category-level ${(score[cat] || 'pending').toLowerCase()}">${THREAT_LABELS[score[cat]] || 'Scoring\u2026'}</span>
                                         ${hasJ ? `<span class="category-chevron">▼</span>` : ''}
                                     </div>
                                 </div>

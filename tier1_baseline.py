@@ -25,8 +25,12 @@ HOW TO RUN:
   All countries, base layer only:
     python tier1_baseline.py --all-countries --layer base
 
-  All countries, all layers (slow - use for first-time setup):
-    python tier1_baseline.py --all-countries --all-layers
+  All countries, all layers (use --workers to parallelize):
+    python tier1_baseline.py --all-countries --all-layers --workers 4
+
+  --workers N: run N countries simultaneously (default 1 = sequential).
+    Recommended: 3-4. Each worker makes concurrent Gemini API calls.
+    Do not exceed 5 — risks more 503 overload errors.
 
 OUTPUT:
   - Writes to baseline_versions (reviewed_by = 'pending')
@@ -40,6 +44,7 @@ import sys
 import json
 import yaml
 import argparse
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 from supabase import create_client, Client
@@ -2042,6 +2047,7 @@ def run_country_baseline(country_name, iso_code, layers, force=False):
     Run Tier 1 baseline for all specified layers of a country.
     Layers are processed in order: base first, then identity layers
     (identity layers receive the base analysis as context).
+    Thread-safe: multiple countries can run concurrently via --workers N.
     """
     print(f"\n{'='*60}")
     print(f"  TIER 1 BASELINE: {country_name} ({iso_code})")
@@ -2112,7 +2118,7 @@ def run_country_baseline(country_name, iso_code, layers, force=False):
             base_scores  = base_baseline.get("scores", {})
             layer_scores = analysis.get("scores", {})
             cats = ["armed_conflict", "regional_instability", "terrorism",
-                    "civil_strife", "crime", "health", "infrastructure"]
+                    "civil_strife", "legal_risk", "crime", "health", "infrastructure"]
             lvl  = {"GREEN": 1, "YELLOW": 2, "ORANGE": 3, "RED": 4, "PURPLE": 5}
             ilv  = {1: "GREEN", 2: "YELLOW", 3: "ORANGE", 4: "RED", 5: "PURPLE"}
 
@@ -2165,6 +2171,10 @@ def main():
     parser.add_argument("--all-countries", action="store_true", help="Run all countries in the system")
     parser.add_argument("--force",         action="store_true",
                         help="Force new baseline version even if one exists (Tier 3 rebalancing)")
+    parser.add_argument("--workers",       type=int, default=1,
+                        help="Number of countries to process in parallel (default: 1). "
+                             "Recommended: 3-4 for all-countries runs. Each worker makes "
+                             "concurrent Gemini API calls so stay under 5 to avoid 503s.")
 
     args = parser.parse_args()
 
@@ -2209,15 +2219,42 @@ def main():
     print(f"  Force     : {args.force}")
     print()
 
-    # Run baselines
+    # Run baselines — sequential (workers=1) or parallel (workers>1)
     success = 0
     failed  = 0
-    for country_name, iso_code in countries:
-        ok = run_country_baseline(country_name, iso_code, layers, force=args.force)
-        if ok:
-            success += 1
-        else:
-            failed += 1
+    workers = max(1, min(args.workers, len(countries)))
+
+    if workers == 1:
+        # Sequential — simple loop, clean output
+        for country_name, iso_code in countries:
+            ok = run_country_baseline(country_name, iso_code, layers, force=args.force)
+            if ok:
+                success += 1
+            else:
+                failed += 1
+    else:
+        # Parallel — run up to `workers` countries simultaneously.
+        # Within each country, layers still run in order (base before identity layers).
+        # Output lines may interleave between countries — this is expected.
+        # Each line is atomic (Python GIL), so no torn output.
+        print(f"  [PARALLEL] Running {len(countries)} countries with {workers} workers\n")
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            future_map = {
+                executor.submit(run_country_baseline, country_name, iso_code, layers, args.force):
+                    (country_name, iso_code)
+                for country_name, iso_code in countries
+            }
+            for future in as_completed(future_map):
+                country_name, iso_code = future_map[future]
+                try:
+                    ok = future.result()
+                    if ok:
+                        success += 1
+                    else:
+                        failed += 1
+                except Exception as exc:
+                    print(f"\n[X] {country_name} ({iso_code}) raised an exception: {exc}")
+                    failed += 1
 
     print(f"\n{'='*60}")
     print(f"  DONE - {success} countries completed, {failed} failed")
