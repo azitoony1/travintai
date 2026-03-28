@@ -1028,23 +1028,39 @@ REGIONAL INSTABILITY — Score the impact of NEIGHBORING conflicts on travelers 
           OR the country is geographically distant from regional flashpoints.
   YELLOW: Regional tensions or a low-level conflict nearby. Some diplomatic tensions
           or refugee flows, but no security impact on travelers inside this country.
-  ORANGE: Active conflict in a neighboring country with documented spillover INTO this country:
-          significant refugee pressure affecting local security, cross-border armed incidents
-          (even if contained), supply chain disruption affecting traveler safety, or economic
-          crisis traceable to regional conflict.
-  RED:    Direct kinetic threat crossing the border: missiles or drone strikes originating
-          from neighbors hitting this country's territory, armed groups crossing the border
-          and operating inside this country, or the country actively supporting a warring
-          party and facing documented retaliatory strikes on its own territory.
-          This is the maximum level. If the situation escalates further, armed_conflict rises.
+  ORANGE: Active conflict in a neighboring country with DOCUMENTED, SPECIFIC spillover INTO
+          this country. Spillover must be concrete — not theoretical or potential:
+            - Significant refugee flows that are documented as creating measurable security
+              pressure inside this country (not just humanitarian presence)
+            - Cross-border armed incidents that have actually occurred on this country's soil
+            - Armed groups physically operating across the border into this country
+            - Economic crisis directly traceable to the regional conflict that affects
+              traveler safety (not just higher prices or general economic strain)
+          NOT ORANGE: Geographic proximity to a conflict. Diplomatic tensions. Being part of
+          an alliance that supports a warring party. Theoretical retaliation risk.
 
-  CALIBRATION: Poland (March 2026): RED (Ukrainian conflict on border; Russian drone incursions
-  into Polish airspace; NATO heightened posture; refugee pressure) — but NOT above RED (no
-  ground combat on Polish soil). Jordan: ORANGE (regional pressure from Syria/Iraq historically,
-  some cross-border incidents) but NOT RED (no direct kinetic attacks on Jordanian territory).
-  Saudi Arabia: RED (Houthi missiles regularly targeting Saudi territory = direct kinetic threat).
-  Russia: RED (Ukrainian drone/missile attacks on Russian border territory and occasionally
-  Moscow; the Ukraine war creates retaliatory strikes on Russian soil).
+  RED:    Direct kinetic threat that has ALREADY materialised on this country's territory:
+          - Missiles or drone strikes originating from outside have actually hit this country
+          - Armed groups have crossed the border and are operating inside this country
+          - The country is actively providing military support to a warring party AND has
+            suffered documented retaliatory strikes on its own soil as a result
+          CRITICAL: Potential retaliation is NOT RED. Diplomatic support for a war is NOT RED.
+          Being a NATO member near a conflict is NOT RED. RED requires actual kinetic events
+          already having occurred on the country's territory — not just risk of them.
+
+  ISLAND NATIONS AND GEOGRAPHIC BARRIERS: For countries where physical cross-border
+  spillover is structurally constrained (islands, countries separated by sea or large
+  geographic buffers), the bar for ORANGE is higher. "Neighbouring conflict" must involve
+  a concrete documented mechanism by which the conflict affects travelers inside this
+  country. Geographic proximity across water does not automatically create spillover.
+
+  IDENTITY LAYERS: Regional instability is geography-driven and gender/identity-neutral.
+  Do NOT raise regional_instability for identity layers (solo_women, jewish_israeli, etc.)
+  unless the briefing documents a specific mechanism by which the regional situation creates
+  a DIFFERENT risk for that identity group vs. general travelers. In practice this is almost
+  never the case — regional instability should almost always be inherited from base.
+
+  NOTE: This category is capped at RED. Do not assign PURPLE.
 
 TERRORISM — Score based on organised non-state actors attacking civilians INSIDE this country.
   The question is: will a traveler be targeted by a terrorist group while visiting?
