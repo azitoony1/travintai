@@ -1018,10 +1018,15 @@ ARMED CONFLICT — Score based on conflict ON THE COUNTRY'S TERRITORY or directl
   PURPLE: Full-scale war. Active fighting in or near the capital or major cities. Daily
           incoming fire. Territory actively contested across multiple fronts. No civilian
           movement reliably safe. Meets at least 2 of 4 PURPLE criteria (see checklist).
-          This is NOT simply "at war". A country fighting back with a functioning government,
-          military, sirens, shelters, and open airports is RED, not PURPLE.
-          PURPLE = collapsed states: Gaza 2024, Syria 2015-2019, Yemen (peak), Sudan (RSF
-          offensive in Khartoum). NOT Israel, NOT Ukraine, NOT Lebanon.
+          Apply the 2-of-4 PURPLE criteria checklist rigorously. Key discriminator:
+          RED = safe zones are identifiable, a traveler who chooses carefully can reduce
+          their risk (e.g. avoiding the north, staying in a city with good air defense).
+          PURPLE = no destination choice within the country meaningfully reduces risk —
+          the entire country is under threat that civilian preparation cannot mitigate.
+          A functioning government, operational civil defense, and open airports weigh
+          against PURPLE — but are not automatic disqualifiers if the other criteria are
+          strongly met (e.g. daily ballistic missile attacks hitting major cities despite
+          interception, with no safe zone identifiable anywhere in the country).
   NOTE: Overseas military deployment = YELLOW at most.
   NOTE: Regular incoming missiles/rockets/drones = RED minimum, even if mostly intercepted.
   NOTE: Being the aggressor in a war fought on another country's soil = YELLOW for this country.
@@ -1078,6 +1083,19 @@ TERRORISM — Score based on organised non-state actors attacking civilians INSI
       the country's borders.
     - Proxy groups operating in OTHER countries on behalf of this government: score in
       those countries' terrorism scores, not here.
+    - ACTIVE WAR CONTEXT — CRITICAL: When a country is in an active armed conflict (armed_conflict
+      RED or PURPLE), rockets, missiles, and military-style attacks by the WARRING PARTIES
+      (including non-state armed groups like Hamas or Hezbollah engaged as belligerents in
+      that specific conflict) are ARMED CONFLICT events, not terrorism. Do NOT double-count
+      them under terrorism. The terrorism score for such a country should reflect only attacks
+      by groups SEPARATE FROM the main armed conflict — e.g. IS sleeper cells conducting
+      bombings unrelated to the main war, or domestic extremist groups.
+      Example: Israel's terrorism score should reflect knife attacks, lone-wolf stabbings,
+      shootings by individuals — not Hamas rockets or Hezbollah missiles, which are already
+      captured in armed_conflict. Israel terrorism = RED at most (organised non-war-related
+      groups exist, periodic attacks), NOT PURPLE (PURPLE requires near-weekly organised
+      non-war attacks, which is not the pattern for Israel's domestic terrorism outside
+      the war context).
 
   CALIBRATION EXAMPLES:
     Ukraine (March 2026): Russia's missile strikes = armed_conflict. IS/Salafi groups in
