@@ -873,45 +873,24 @@ Only score those categories higher if the briefing contains SPECIFIC evidence th
 those systems are damaged, collapsed, or directly affected.
 
 EXAMPLES OF CORRECT CATEGORY INDEPENDENCE:
-  Israel (March 2026, active war):
-    - armed_conflict PURPLE  ✓ (active multi-front war)
-    - terrorism PURPLE       ✓ (near-daily attacks, terrorism integral to war)
-    - health GREEN           ✓ (world-class hospitals, Hadassah/Sourasky/Sheba operating normally)
-    - infrastructure YELLOW  ✓ (roads, power, water, internet all function. Minor disruption
-                                from missile alerts. No infrastructure collapse.)
-    - crime YELLOW           ✓ (low civilian crime, travelers not targeted by criminals)
+  Country at war with active missiles but functioning hospitals and roads:
+    - armed_conflict HIGH    ✓ (score based on actual conflict intensity and safe-zone availability)
+    - health LOWER           ✓ (score whether traveler CAN get medical care — if hospitals are
+                                open and treating patients, score YELLOW or GREEN, not PURPLE)
+    - infrastructure LOWER   ✓ (score physical state of roads/power/water/internet — if they
+                                function, score accordingly, even if sirens go off daily)
+    - crime LOWER            ✓ (score whether criminals target travelers, not whether country is at war)
 
-  Iran (March 2026, authoritarian state at war):
-    - armed_conflict PURPLE  ✓ (direct war with Israel, Israeli airstrikes, Iranian missile attacks)
-    - civil_strife PURPLE    ✓ (systematic crackdown, protesters killed, no rule of law for dissent)
-    - terrorism PURPLE       ✓ (state sponsor of terror, IRGC operations, foreign hostages)
-    - infrastructure ORANGE  ✓ (roads work, power works with cuts, internet heavily censored —
-                                NOT collapsed. Iran is a functioning country. Roads, bridges,
-                                water systems all operate. Score based on traveler experience,
-                                not geopolitical tension.)
-    - health ORANGE          ✓ (hospitals function but lack some medicines due to sanctions.
-                                Urban hospitals can treat emergencies. NOT collapsed.)
-    - crime YELLOW           ✓ (Iran has LOWER street crime than most Middle Eastern countries.
-                                Traveler mugging/robbery is rare. NOT PURPLE.)
+  Country with severe political repression but law-abiding streets:
+    - civil_strife/legal_risk HIGH ✓ (government persecution is real)
+    - crime LOWER                  ✓ (street crime rate may be low — score it independently)
 
-  Netherlands:
-    - crime GREEN            ✓ (~0.9 homicides per 100k — well below YELLOW threshold of 5)
-    - terrorism ORANGE       ✓ (2019 Utrecht attack, ongoing credible threats)
+  Country with high general crime but no armed conflict:
+    - crime HIGH             ✓ (score the actual homicide rate and kidnapping pattern)
+    - armed_conflict GREEN   ✓ (no fighting on territory — score it independently)
 
-  Australia:
-    - health GREEN           ✓ (world-class healthcare system — same tier as EU, USA, Japan)
-    - infrastructure GREEN   ✓ (road fatality rate ~4/100k, modern utilities — clearly GREEN)
-    - crime GREEN            ✓ (~1.8 homicides/100k — clearly GREEN)
-
-  France:
-    - armed_conflict GREEN   ✓ (no fighting on French territory)
-    - crime YELLOW           ✓ (~1.3 homicides/100k — YELLOW threshold starts at 5)
-    - civil_strife ORANGE    ✓ (periodic protests with violence, not RED widespread unrest)
-
-  Poland:
-    - armed_conflict YELLOW  ✓ (no fighting on Polish territory despite bordering Ukraine)
-    - crime GREEN/YELLOW     ✓ (~0.7 homicides/100k — GREEN by any measure)
-    - health YELLOW          ✓ (adequate healthcare, EU member state)
+  Apply this logic to every country: what does the BRIEFING say specifically about
+  each category? Score each one on its own evidence, never by inference from others.
 
 === STRICT PURPLE LIMITS FOR HEALTH, CRIME, INFRASTRUCTURE ===
 
@@ -919,21 +898,24 @@ NEVER assign PURPLE to health, crime, or infrastructure unless:
 
   Health PURPLE:    Healthcare system has physically COLLAPSED. Hospitals are bombed/closed.
                     No emergency care available anywhere in major cities.
-                    (True examples: Yemen 2023, Syria 2015-2019, Gaza 2024)
                     NOT PURPLE just because: sanctions strain supplies, system is under-funded,
-                    or doctors are leaving. Iran, Russia, North Korea = ORANGE at most.
+                    doctors are leaving, or hospitals are overwhelmed with casualties.
+                    If a traveler who has a medical emergency can get treated at a hospital
+                    in a major city — even imperfectly — it is NOT PURPLE.
 
-  Crime PURPLE:     Travelers are SYSTEMATICALLY targeted by criminal organisations.
-                    No-go zones where criminals control territory and police don't enter.
-                    (True examples: parts of Mexico gang territory, parts of DRC)
-                    NOT PURPLE just because: the country is authoritarian, or there are
-                    protests, or it's a war zone. Iran = YELLOW (low street crime).
+  Crime PURPLE:     Travelers face SYSTEMATIC inescapable targeting by criminal organisations
+                    with substantial territorial control across multiple large regions.
+                    State has effectively ceded governance of significant geographic areas.
+                    NOT PURPLE just because: the country is authoritarian, there are protests,
+                    it is a war zone, or gang violence exists in city neighborhoods.
+                    Ask: can a traveler move through the country without crossing criminal-
+                    controlled territory? If yes in most areas → not PURPLE.
 
-  Infrastructure PURPLE: Infrastructure has PHYSICALLY COLLAPSED. No roads, no power,
-                    no water, no communications in major cities.
-                    (True examples: Libya active war zones, Yemen 2023)
-                    NOT PURPLE just because: power cuts are frequent, or roads are poor,
-                    or internet is censored. Iran, Russia = ORANGE. Israel = YELLOW.
+  Infrastructure PURPLE: Infrastructure has PHYSICALLY COLLAPSED in major cities.
+                    No reliable roads, power, water, or communications available.
+                    NOT PURPLE just because: power cuts are frequent, roads are poor,
+                    internet is censored, or the country is under military pressure.
+                    If utilities function (even unreliably) and roads are passable → not PURPLE.
 
 If you are considering PURPLE for health, crime, or infrastructure, ask yourself:
 "Can a traveler in the capital city get emergency medical treatment, walk the streets
@@ -965,19 +947,19 @@ armed_conflict RED (the government is functioning well while fighting an externa
 Evaluate each category on its own indicators. Do not reason "this country is dangerous
 overall, so all categories must be high."
 
-WRONG: "Iran is at war and sponsors terrorism, therefore terrorism = PURPLE."
-RIGHT: "What organised non-state groups are conducting attacks on civilians inside Iran?
-        The IS Kerman shrine attack (2024) and Ahvaz attack (2018) demonstrate capability.
-        Iran terrorism = ORANGE (organised group, intermittent attacks, not weekly)."
+WRONG: "This country is at war and sponsors terrorism abroad, therefore terrorism = PURPLE."
+RIGHT: "What organised non-state groups are conducting attacks on civilians INSIDE this
+        country? Score based on group presence, attack frequency, and casualty pattern —
+        not the country's geopolitical role or foreign activities."
 
-WRONG: "Ukraine is in a war zone, so civil_strife must be RED or PURPLE."
-RIGHT: "Ukraine's internal political situation: strong democratic government, high civilian
-        support for war effort, no political repression of own citizens. Civil_strife = GREEN."
+WRONG: "This country is in a war zone, so civil_strife must be RED or PURPLE."
+RIGHT: "Score civil_strife on the internal political situation: does the government
+        repress its own citizens? Are there riots, coups, mass protests with violence?
+        A country can have HIGH armed_conflict and LOW civil_strife simultaneously."
 
-WRONG: "Russia's missiles hit Ukraine = Ukraine terrorism PURPLE."
-RIGHT: "State military attacks between countries = armed_conflict. Terrorism requires
-        non-state actors. Ukraine terrorism score is based on what non-state groups are
-        doing to civilians inside Ukraine — likely ORANGE at most."
+WRONG: "State A's missiles hit Country B = Country B terrorism PURPLE."
+RIGHT: "State military attacks between countries = armed_conflict, never terrorism.
+        Terrorism requires non-state actors operating independently of state military action."
 
 CRITICAL PRINCIPLE — ARMED CONFLICT:
 Score what travelers PHYSICALLY ENCOUNTER on the ground, NOT the country's
@@ -1090,12 +1072,11 @@ TERRORISM — Score based on organised non-state actors attacking civilians INSI
       them under terrorism. The terrorism score for such a country should reflect only attacks
       by groups SEPARATE FROM the main armed conflict — e.g. IS sleeper cells conducting
       bombings unrelated to the main war, or domestic extremist groups.
-      Example: Israel's terrorism score should reflect knife attacks, lone-wolf stabbings,
-      shootings by individuals — not Hamas rockets or Hezbollah missiles, which are already
-      captured in armed_conflict. Israel terrorism = RED at most (organised non-war-related
-      groups exist, periodic attacks), NOT PURPLE (PURPLE requires near-weekly organised
-      non-war attacks, which is not the pattern for Israel's domestic terrorism outside
-      the war context).
+      Example: In a country at war, the terrorism score should reflect knife attacks,
+      lone-wolf stabbings, shootings, bombings by groups SEPARATE from the main conflict —
+      not rocket/missile attacks by the warring parties, which are already in armed_conflict.
+      Apply the PURPLE terrorism threshold (near-weekly organised non-war attacks) only to
+      non-war domestic terrorism, not to war-context military operations by belligerents.
 
   CALIBRATION EXAMPLES:
     Ukraine (March 2026): Russia's missile strikes = armed_conflict. IS/Salafi groups in
@@ -1277,7 +1258,8 @@ CRIME — Score criminal risk to travelers specifically. Anchor on homicide rate
           territorial control over MULTIPLE large provinces — state has effectively ceded
           governance of significant geographic areas. Travelers face systemic inescapable risk.
           NOT PURPLE: gang presence in city neighbourhoods; cartel active in one city;
-          high crime with functioning state. USA is NOT PURPLE. Mexico nationally is RED.
+          high crime rate with a functioning state. Apply the 60/100k threshold and the
+          substantial territorial control test independently for each country.
           Note: crime PURPLE forces total score to at least RED (soft floor applies).
 
 HEALTH — Score based on traveler's ability to access safe medical care and avoid serious disease.
@@ -1429,13 +1411,13 @@ with kidnapping risk, organised crime penetration, and armed robbery patterns):
   PURPLE: Over 60 per 100k. OR criminal organisations exercise SUBSTANTIAL territorial
           control over multiple states/provinces — state has effectively ceded governance
           of significant geographic areas.
-          NOT PURPLE: gang presence in neighbourhoods; cartel in one city; high crime
-          with functioning state. Mexico overall = RED, not PURPLE.
+          NOT PURPLE: gang presence in neighbourhoods; cartel active in one city; high
+          crime rate with a functioning state that still controls most territory.
           Soft floor: crime PURPLE -> total at least RED.
 
 HEALTH thresholds:
   GREEN:  High-income country with functional hospital system. Routine vaccinations sufficient.
-          No active disease outbreaks. (Australia, EU, USA, Japan, Singapore = GREEN)
+          No active disease outbreaks. Emergency care reliably available in major cities.
   YELLOW: Adequate urban healthcare. Some rural limitations. Minor endemic disease risk.
   ORANGE: Limited healthcare outside major cities. Active endemic diseases (malaria, dengue,
           cholera in specific regions). Medical evacuation insurance strongly recommended.
@@ -1459,63 +1441,33 @@ consider power/water reliability, internet access, and transport system reliabil
           water, or communications. Movement impossible without private logistics.
           Soft floor: infrastructure PURPLE -> total at least RED.
 
-CALIBRATION EXAMPLES:
-  Australia: Crime GREEN (<2 homicides/100k). Health GREEN (excellent hospitals).
-  Infrastructure GREEN (modern). Armed_conflict YELLOW (overseas deployment only, no
-  home-soil fighting). Terrorism: ORANGE if the Dec 2025 Bondi attack is classified as
-  terrorism (6 deaths, lone attacker — motive disputed). YELLOW if classified as criminal/
-  mental health incident rather than political violence. Use your judgement on classification.
+CALIBRATION ANCHORS — apply these data thresholds to whatever the briefing contains:
 
-  Israel (March 2026): PURPLE armed_conflict (multi-front war, daily missile strikes on
-  cities — regular incoming rockets = RED minimum; active war = PURPLE). PURPLE terrorism
-  (near-daily incidents across the country, terrorism integral to active war).
+  Crime rate anchor: <5 homicides/100k = GREEN. 5-15 = YELLOW. 15-30 = ORANGE.
+  30-60 = RED. >60 = PURPLE threshold (also requires territorial control test).
 
-  France: ORANGE terrorism (2015-2024 sustained attack history; Nice, Paris, Strasbourg;
-  active threat level declared). GREEN armed_conflict. YELLOW crime (~1.3 homicides/100k).
+  Infrastructure anchor: Road fatality rate <10/100k = GREEN. 10-20 = YELLOW.
+  20-30 = ORANGE. >30 = RED. Physical collapse of utilities in major cities = PURPLE.
 
-  Netherlands: YELLOW overall. Crime YELLOW (~0.9 homicides/100k, organized crime present
-  but travelers not targeted). Terrorism ORANGE (credible threats, 2019 Utrecht attack).
+  Health anchor: Hospitals open and treating patients in capital = GREEN or YELLOW.
+  Poor quality but functional = ORANGE. Active epidemic = RED. Bombed/closed = PURPLE.
 
-  Mexico: RED crime (>25 homicides/100k nationally, cartel kidnapping risk in multiple states,
-  cartel territorial control in significant areas). ORANGE civil_strife (cartel violence
-  affecting civilian movement). Infrastructure ORANGE (road safety poor in cartel zones).
+  Armed conflict anchor: No fighting on territory = GREEN/YELLOW. Conflict in one
+  region, capital safe = ORANGE. Routine missile attacks on populated areas OR widespread
+  multi-region conflict OR capital threatened = RED minimum. Full-scale war with no
+  identifiable safe zone across the country = apply the 2-of-4 PURPLE checklist.
 
-  Poland: armed_conflict YELLOW — NOT RED or ORANGE. No fighting on Polish territory.
-  Poland is a NATO member. Occasional Russian drone incursions into Polish airspace do
-  not constitute active armed conflict on Polish soil. regional_instability RED (Ukraine
-  war directly on border, Russian threat, NATO heightened posture, refugee pressure).
-  crime GREEN (~0.7 homicides/100k). health YELLOW (EU member, adequate hospitals).
-  infrastructure GREEN (modern EU roads). Total = ORANGE from weighted average + RI RED
-  soft floor (regional instability RED -> total at least ORANGE).
+  Country is the WAR AGGRESSOR fighting on another country's soil: the fighting is NOT
+  on its own territory. Score armed_conflict based only on what reaches ITS soil
+  (retaliatory strikes, cross-border incidents) — not based on its role in the conflict.
 
-  Russia (March 2026): armed_conflict ORANGE — NOT RED or PURPLE. Russia is the aggressor
-  in the Ukraine war, but the active fighting is IN UKRAINE, not on Russian territory in
-  any traveler-meaningful way. Ukrainian drones have hit Belgorod oblast and occasionally
-  Moscow suburbs, but there is no active combat in Moscow or St. Petersburg. Score ORANGE
-  (acknowledging cross-border incidents), not RED. Do NOT let Russia's role as war
-  initiator inflate its armed_conflict score — score only what physically threatens
-  travelers on Russian soil.
-  regional_instability RED (Ukrainian retaliatory drone/missile strikes on Russian
-  territory; Russia is the warring party and faces retaliatory attacks on its soil).
-  terrorism RED (IS-K Crocus City Hall attack, March 2024, 143 killed — organised group
-  with demonstrated capability inside Russia, not exclusively military targets).
-  civil_strife RED (systematic detention of Western nationals as political bargaining
-  chips: Evan Gershkovich, Paul Whelan; wartime repression of dissent; lethal crackdown
-  on protesters). Russia total likely ORANGE from weighted average with RED soft floors
-  from terrorism/civil_strife/RI — each applies an ORANGE floor, not RED. Accurate
-  sub-scores tell the full story even if the total is ORANGE.
+  Country with overseas military deployment only (no home-soil fighting): armed_conflict
+  YELLOW at most, regardless of the scale of the overseas operation.
 
-  Israel infrastructure (March 2026): YELLOW — NOT RED or ORANGE. Roads, power, water,
-  and internet all function normally despite active war. The Iron Dome intercepts most
-  missiles. Missile alerts interrupt daily life but do not destroy infrastructure.
-  Missile alerts, curfews, and security restrictions are armed_conflict factors — score
-  armed_conflict PURPLE for the war, but keep infrastructure YELLOW for the physical
-  systems. Do not let war context push infrastructure above YELLOW when systems function.
-
-  United Kingdom: armed_conflict YELLOW. terrorism ORANGE (organised groups exist, threat
-  level elevated, but no sustained mass-casualty campaign recently). crime YELLOW
-  (~1.2 homicides/100k — clearly below the 5/100k threshold for YELLOW). health GREEN
-  (NHS functional). infrastructure GREEN (modern). Total ORANGE from weighted average.
+  Terrorism in an active war context: attacks by warring parties (rockets, missiles,
+  military-style operations by the conflict's belligerents) = armed_conflict. Score
+  terrorism only on non-war non-state actor attacks against civilians (sleeper cells,
+  domestic extremists, criminal-political violence unrelated to the main war).
 
 TOTAL SCORE LOGIC (Python calculates this — for your reference only):
   LAYER 1 — Hard veto:
@@ -1615,9 +1567,9 @@ A country with ALL of the following cannot be PURPLE for armed_conflict:
   3. Civil defense infrastructure (sirens, shelters, warning systems, missile defense)
      that gives civilians meaningful ability to protect themselves
   4. At least one viable evacuation route (airport operating, or safe land border)
-This ceiling applies even under heavy daily missile or drone attacks.
-Israel during the Iran-Israel war (2025-2026): meets all 4 → armed_conflict RED.
-Ukraine during the Russia war: meets all 4 for non-frontline regions → armed_conflict RED.
+This ceiling applies even under heavy daily missile or drone attacks, UNLESS the attacks
+are so pervasive and widespread that no destination choice within the country meaningfully
+reduces risk — in that case, the 2-of-4 PURPLE checklist takes precedence.
 
 PURPLE total requires armed_conflict PURPLE (hard-veto) OR a combination of PURPLE
 sub-scores driving the weighted average to 4.5+ while satisfying the checklist above.
@@ -1625,8 +1577,8 @@ sub-scores driving the weighted average to 4.5+ while satisfying the checklist a
 RED means: serious documented risk requiring real security planning. Well-prepared
 travelers with clear justification can go. The state provides partial but real
 protection. Evacuation is possible though may be disrupted. Risk is serious but
-mitigable. RED covers active war zones with functioning states (Israel, Ukraine),
-high-crime countries, and authoritarian states that are dangerous but not collapsed.
+mitigable. RED covers countries with widespread conflict and a functioning state,
+high-crime environments, and authoritarian states that are dangerous but not collapsed.
 
 PURPLE means: the state cannot protect you AND you cannot protect yourself AND you
 cannot leave reliably. These three things together — not just one or two.
@@ -1700,40 +1652,30 @@ The regional total_score is computed using the same veto/weighted-average/soft-f
 logic as the country total, but applied to the region's category mix (country scores
 overridden by the region's specific scores where provided).
 
-REGIONAL CALIBRATION EXAMPLES:
-  Ukraine (country: armed_conflict RED, total RED):
-    Region "Eastern Frontline" (Kharkiv, Donetsk, Luhansk, Zaporizhzhia frontline):
-      armed_conflict: PURPLE → total: PURPLE
-    Region "Western Ukraine" (Lviv, Uzhhorod, Ivano-Frankivsk):
-      armed_conflict: ORANGE → total: ORANGE
+REGIONAL FORMAT EXAMPLES (structure only — do not use these as score anchors):
 
-  Israel (country: armed_conflict RED, total RED):
-    Region "Northern Border" (Metula, Kiryat Shmona — within 5km of Lebanon border):
-      armed_conflict: PURPLE (daily Hezbollah fire, very short warning times) → total: PURPLE
-    Region "Gaza Envelope" (within 7km of Gaza border, now depopulated):
-      armed_conflict: PURPLE → total: PURPLE
-    Region "Tel Aviv / Central" (Tel Aviv, Jerusalem, Beer Sheva):
-      [no change from country level — omit this region]
+  Country with active frontline conflict:
+    Region "Active Frontline Zone" (areas within direct combat range):
+      armed_conflict: one or two levels above country level → compute total accordingly
+    Region "Rear/Western Areas" (far from fighting, normal urban life):
+      armed_conflict: one level below country level → compute total accordingly
+    Region "Capital / Major Commercial City" (if same as country baseline):
+      [omit — no material difference from country level]
 
-  Nigeria (country: total RED):
-    Region "Northeast" (Borno, Yobe, Adamawa states — Boko Haram/ISWAP):
-      terrorism: PURPLE, armed_conflict: RED → total: PURPLE
-    Region "Northwest" (Katsina, Sokoto, Zamfara — bandit/kidnap belt):
-      armed_conflict: RED, crime: PURPLE → total: RED/PURPLE
-    Region "Lagos / Abuja":
-      crime: ORANGE, terrorism: ORANGE → total: ORANGE
+  Country with concentrated cartel/criminal control in specific states:
+    Region "Cartel Heartland States":
+      crime: one or two levels above country level, possibly civil_strife elevated
+    Region "Tourist Corridors / Coastal Resorts":
+      crime: one level below country level (heavy security presence, tourist-focused)
 
-  Mexico (country: total ORANGE):
-    Region "Sinaloa / Tamaulipas / Colima" (cartel heartland):
-      crime: PURPLE, civil_strife: RED → total: RED
-    Region "Cancún / Riviera Maya / Los Cabos" (tourist corridors):
-      crime: YELLOW → total: YELLOW
+  Country with regional separatist or ethnic conflict in one part:
+    Region "Conflict Province":
+      armed_conflict, terrorism: elevated above country level
+    Region "Rest of Country":
+      [omit if same as country baseline]
 
-  DRC (country: total RED):
-    Region "Eastern Congo" (North Kivu, South Kivu, Ituri — M23/armed groups):
-      armed_conflict: PURPLE, health: PURPLE → total: PURPLE
-    Region "Kinshasa":
-      [no material change from country level — omit]
+Use the briefing evidence to identify the actual zones for the specific country being assessed.
+Name regions descriptively (e.g. "Northern Border Region", "Eastern Provinces", "Capital Area").
 
 IDENTITY LAYER REGIONS: If scoring an identity layer (jewish_israeli, solo_women),
 regional scores for that layer must be >= the base layer regional scores for the same
