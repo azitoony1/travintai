@@ -1270,7 +1270,7 @@
                     ${sources.length > 0 ? `
                     <div style="margin-top: 24px;">
                         <div class="section-title">Sources for Further Research</div>
-                        ${sources.map(source => `<div style="margin-bottom: 8px;">• ${source}</div>`).join('')}
+                        ${sources.map(source => `<div style="margin-bottom: 8px;">• ${source.replace(/\s*\(Tier \d+\)/gi, '').trim()}</div>`).join('')}
                     </div>
                     ` : ''}
                 </div>
@@ -1444,15 +1444,17 @@
             // Parse AI-generated sources from analysis
             if (analysisSources && analysisSources.length > 0) {
                 analysisSources.forEach(source => {
+                    // Strip internal "(Tier X)" labels — not meaningful to travelers
+                    const cleaned = source.replace(/\s*\(Tier \d+\)/gi, '').trim();
                     // Try to extract URL if present
-                    const urlMatch = source.match(/(https?:\/\/[^\s]+)/);
+                    const urlMatch = cleaned.match(/(https?:\/\/[^\s]+)/);
                     if (urlMatch) {
                         const url = urlMatch[1];
-                        const title = source.replace(url, '').replace(':', '').trim();
+                        const title = cleaned.replace(url, '').replace(':', '').trim();
                         links.ai_sources.push({ title: title || url, url: url });
                     } else {
                         // No URL, just add as text
-                        links.ai_sources.push({ title: source, url: null });
+                        links.ai_sources.push({ title: cleaned, url: null });
                     }
                 });
             }
