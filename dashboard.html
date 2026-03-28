@@ -995,7 +995,12 @@
             'Iran (Islamic Republic of)': 'Iran',
             'United Kingdom': 'United Kingdom',
             'Netherlands': 'Netherlands',
-            'Israel': 'Israel'
+            'Israel': 'Israel',
+            'Belgium': 'Belgium',
+            'Canada': 'Canada',
+            'Iceland': 'Iceland',
+            'Italy': 'Italy',
+            'Norway': 'Norway'
         };
         
         function normalizeCountryName(geoName) {
@@ -1242,7 +1247,7 @@
                                 <div class="category-item-row">
                                     <span class="category-name">${label}</span>
                                     <div style="display:flex;align-items:center;gap:6px;">
-                                        <span class="category-level ${score[cat].toLowerCase()}">${THREAT_LABELS[score[cat]]}</span>
+                                        <span class="category-level ${(score[cat] || 'pending').toLowerCase()}">${THREAT_LABELS[score[cat]] || '–'}</span>
                                         ${hasJ ? `<span class="category-chevron">▼</span>` : ''}
                                     </div>
                                 </div>
@@ -1662,27 +1667,16 @@
                     const geoName = feature.properties.name;
                     const countryName = normalizeCountryName(geoName);
                     countryLayers[countryName] = layer;
-                    
-                    const score = scoresData[countryName]?.[currentLayer];
-                    
-                    if (score) {
+
+                    // Attach click handler to ALL countries in our dataset,
+                    // not just those with a score for the current layer.
+                    // showCountryDetail() handles the no-data case gracefully.
+                    if (scoresData[countryName]) {
                         layer.on({
                             mouseover: () => layer.setStyle({ weight: 4, color: '#58a6ff', fillOpacity: 0.7 }),
                             mouseout: () => layer.setStyle(getCountryStyle(feature)),
-                            click: () => {
-                                console.log('=== CLICK DEBUG ===');
-                                console.log('GeoJSON name:', geoName);
-                                console.log('Normalized name:', countryName);
-                                console.log('Score exists:', !!scoresData[countryName]);
-                                console.log('Current layer:', currentLayer);
-                                if (scoresData[countryName]) {
-                                    console.log('Available layers:', Object.keys(scoresData[countryName]));
-                                }
-                                showCountryDetail(countryName);
-                            }
+                            click: () => showCountryDetail(countryName)
                         });
-                        
-                        // NO POPUP - removed as requested
                     }
                 }
             }).addTo(map);
